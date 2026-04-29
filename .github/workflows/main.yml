@@ -21,9 +21,8 @@ jobs:
           cd target/release
           mv agb_font_converter_eb converter
           strip converter
-          tar cvf ../../../converter_mac.tar.gz converter
+          tar cvf ../../converter_mac.tar.gz converter
           cd -
       - uses: softprops/action-gh-release@v3
         with:
           files: converter_mac.tar.gz
-        
