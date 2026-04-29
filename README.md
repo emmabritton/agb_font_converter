@@ -1,6 +1,6 @@
 # AGB Font Converter
 
-Converts Aseprite/PNG to my AGB Font format
+Converts Aseprite/PNG to my [AGB Font format](https://github.com/emmabritton/gba_agb_font_renderer)
 
 ## Usage
 
