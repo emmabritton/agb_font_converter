@@ -23,9 +23,7 @@ jobs:
           strip converter
           tar cvf ../../../converter_mac.tar.gz converter
           cd -
-
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v3
         with:
           files: converter_mac.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
