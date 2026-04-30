@@ -5,15 +5,15 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-const GLYPH_COUNT: usize = 256;
 const SHEET_COLS: usize = 16;
+const GLYPH_COUNT_FULL: usize = 256;
+const GLYPH_COUNT_SMALL: usize = 95; // ASCII 32-126 (space to ~)
 
 fn pixel_to_index(pixel: Rgba<u8>) -> u8 {
     if pixel[3] < 128 {
         return 0;
     }
     let luma = (pixel[0] as u32 * 299 + pixel[1] as u32 * 587 + pixel[2] as u32 * 114) / 1000;
-    // luma 0-15 → index 0 (transparent), 16-31 → 1, ..., 240-255 → 15
     (luma >> 4) as u8
 }
 
@@ -84,7 +84,18 @@ fn main() {
     };
 
     let (img_width, img_height) = img.dimensions();
-    let sheet_rows = GLYPH_COUNT.div_ceil(SHEET_COLS);
+
+    // Detect mode from image dimensions: >= 16 cell rows -> 256-char, otherwise 63-char
+    // 63-char layout (in image order): space, 0-9, A-Z, a-z.
+    let cell_rows = img_height / cell_height as u32;
+    let (glyph_count, mode_byte): (usize, u8) =
+        if cell_rows as usize * SHEET_COLS >= GLYPH_COUNT_FULL {
+            (GLYPH_COUNT_FULL, 1)
+        } else {
+            (GLYPH_COUNT_SMALL, 0)
+        };
+
+    let sheet_rows = glyph_count.div_ceil(SHEET_COLS);
 
     assert!(
         img_width >= cell_width as u32 * SHEET_COLS as u32,
@@ -103,11 +114,11 @@ fn main() {
 
     let row_u32s = (cell_width as usize + 7) >> 3;
     let glyph_size = row_u32s * cell_height as usize;
-    let total_u32s = glyph_size * GLYPH_COUNT;
+    let total_u32s = glyph_size * glyph_count;
 
     let mut data: Vec<u32> = vec![0u32; total_u32s];
 
-    for glyph_idx in 0..GLYPH_COUNT {
+    for glyph_idx in 0..glyph_count {
         let sheet_col = glyph_idx % SHEET_COLS;
         let sheet_row = glyph_idx / SHEET_COLS;
         let base_x = sheet_col * cell_width as usize;
@@ -130,9 +141,9 @@ fn main() {
         }
     }
 
-    let mut char_widths = [cell_width; GLYPH_COUNT];
+    let mut char_widths = vec![cell_width; glyph_count];
     #[allow(clippy::needless_range_loop)]
-    for glyph_idx in 0..GLYPH_COUNT {
+    for glyph_idx in 0..glyph_count {
         let glyph_base = glyph_idx * glyph_size;
         let mut max_set_px = 0usize;
         for row in 0..cell_height as usize {
@@ -151,13 +162,16 @@ fn main() {
     }
 
     let mut out = BufWriter::new(File::create(&output_path).expect("failed to create output file"));
-    out.write_all(&[cell_width, cell_height]).unwrap();
+    out.write_all(&[mode_byte, cell_width, cell_height]).unwrap();
     out.write_all(&char_widths).unwrap();
-    out.write_all(&[0, 0]).unwrap();
+    out.write_all(&[0]).unwrap();
+    if mode_byte == 0 {
+        out.write_all(&[0]).unwrap();
+    }
     for d in &data {
         out.write_all(&d.to_le_bytes()).unwrap();
     }
     out.flush().unwrap();
 
-    println!("Written to {output_path:?}");
+    println!("Written to {output_path:?} ({} glyphs)", glyph_count);
 }
