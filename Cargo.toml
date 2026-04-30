@@ -1,6 +1,6 @@
 [package]
 name = "agb_font_converter_eb"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Emma Britton <emmabritton@pm.me>"]
 description = "Converter for font format for AGB"
