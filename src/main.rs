@@ -85,8 +85,7 @@ fn main() {
 
     let (img_width, img_height) = img.dimensions();
 
-    // Detect mode from image dimensions: >= 16 cell rows -> 256-char, otherwise 63-char
-    // 63-char layout (in image order): space, 0-9, A-Z, a-z.
+    // Detect mode from image dimensions: >= 16 cell rows -> 256-char, otherwise 95-char
     let cell_rows = img_height / cell_height as u32;
     let (glyph_count, mode_byte): (usize, u8) =
         if cell_rows as usize * SHEET_COLS >= GLYPH_COUNT_FULL {
@@ -162,7 +161,8 @@ fn main() {
     }
 
     let mut out = BufWriter::new(File::create(&output_path).expect("failed to create output file"));
-    out.write_all(&[mode_byte, cell_width, cell_height]).unwrap();
+    out.write_all(&[mode_byte, cell_width, cell_height])
+        .unwrap();
     out.write_all(&char_widths).unwrap();
     out.write_all(&[0]).unwrap();
     if mode_byte == 0 {
