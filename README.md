@@ -4,8 +4,26 @@ Converts Aseprite/PNG to my [AGB Font format](https://github.com/emmabritton/gba
 
 ## Usage
 
+### Example
 ```
 ./converter -w 8 -h 8 image.aseprite 
+```
+
+### Help output
+
+```
+Usage: agb_font_converter_eb [OPTIONS] --width [<PX>] --height [<PX>] <FILE>
+
+Arguments:
+  <FILE>  PNG/Aseprite Image
+
+Options:
+  -w, --width [<PX>]      Cell width
+  -h, --height [<PX>]     Cell height
+  -o, --output [<FILE>]   Output file
+  -m, --monospace [<PX>]  Force uniform width. Without a value uses the widest glyph; with a value (e.g. -m 8) uses that width for all glyphs
+      --help              Print help
+  -V, --version           Print version
 ```
 
 The mode is detected automatically from the image dimensions:

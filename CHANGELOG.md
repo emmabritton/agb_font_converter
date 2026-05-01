@@ -1,3 +1,7 @@
+# v0.3.0
+
+- Add support for forcing monospace
+
 # v0.2.0
 
 - Add support for aseprite

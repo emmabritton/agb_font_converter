@@ -1,5 +1,5 @@
 use asefile::AsepriteFile;
-use clap::{arg, command, value_parser};
+use clap::{Arg, arg, command, value_parser};
 use image::{DynamicImage, GenericImageView, Rgba};
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -40,7 +40,16 @@ fn main() {
                 .value_parser(value_parser!(PathBuf)),
         )
         .arg(
-            clap::Arg::new("help")
+            Arg::new("monospace")
+                .short('m')
+                .long("monospace")
+                .num_args(0..=1)
+                .value_name("PX")
+                .value_parser(value_parser!(u8))
+                .help("Force uniform width. Without a value uses the widest glyph; with a value (e.g. -m 8) uses that width for all glyphs"),
+        )
+        .arg(
+            Arg::new("help")
                 .long("help")
                 .action(clap::ArgAction::Help)
                 .help("Print help"),
@@ -158,6 +167,14 @@ fn main() {
             }
         }
         char_widths[glyph_idx] = if max_set_px == 0 { 1 } else { max_set_px as u8 };
+    }
+
+    if matches.contains_id("monospace") {
+        let mono_width = matches
+            .get_one::<u8>("monospace")
+            .copied()
+            .unwrap_or_else(|| *char_widths.iter().max().unwrap_or(&cell_width));
+        char_widths.fill(mono_width);
     }
 
     let mut out = BufWriter::new(File::create(&output_path).expect("failed to create output file"));
