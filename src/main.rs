@@ -1,6 +1,12 @@
-use asefile::AsepriteFile;
-use clap::{Arg, arg, command, value_parser};
-use image::{DynamicImage, GenericImageView, Rgba};
+mod edit;
+mod parsing;
+mod update;
+
+use crate::edit::run_edit;
+use crate::parsing::{extract_glyph_data, open_image, parse_char_arg};
+use crate::update::run_update;
+use clap::{Arg, ArgAction, Command, arg, command, value_parser};
+use image::GenericImageView;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -9,29 +15,67 @@ const SHEET_COLS: usize = 16;
 const GLYPH_COUNT_FULL: usize = 256;
 const GLYPH_COUNT_SMALL: usize = 95; // ASCII 32-126 (space to ~)
 
-fn pixel_to_index(pixel: Rgba<u8>) -> u8 {
-    if pixel[3] < 128 {
-        return 0;
-    }
-    let luma = (pixel[0] as u32 * 299 + pixel[1] as u32 * 587 + pixel[2] as u32 * 114) / 1000;
-    (luma >> 4) as u8
-}
-
 fn main() {
     let matches = command!()
+        .subcommand_required(false)
+        .subcommand(
+            Command::new("update")
+                .about("Replace pixel data in a compiled font binary from a new image, preserving all character widths")
+                .arg(
+                    arg!(<BIN> "Binary font file (.bin) to update in-place")
+                        .value_parser(value_parser!(PathBuf)),
+                )
+                .arg(
+                    arg!(<IMAGE> "PNG or Aseprite font sheet to read pixel data from")
+                        .value_parser(value_parser!(PathBuf)),
+                )
+                .arg(
+                    Arg::new("help")
+                        .long("help")
+                        .action(clap::ArgAction::Help)
+                        .help("Print help"),
+                ),
+        )
+        .subcommand(
+            Command::new("edit")
+                .about("Check or patch character widths in a compiled font binary")
+                .arg(
+                    arg!(<FILE> "Binary font file (.bin)")
+                        .value_parser(value_parser!(PathBuf)),
+                )
+                .arg(
+                    Arg::new("get")
+                        .long("get")
+                        .short('g')
+                        .value_name("CHAR")
+                        .action(ArgAction::Append)
+                        .help("Print width for CHAR (ASCII char, decimal, or 0x hex)"),
+                )
+                .arg(
+                    Arg::new("set")
+                        .long("set")
+                        .short('s')
+                        .value_name("CHAR=WIDTH")
+                        .action(ArgAction::Append)
+                        .help("Set width for CHAR to WIDTH (e.g. A=8, 65=8, 0x41=8)"),
+                )
+                .arg(
+                    Arg::new("help")
+                        .long("help")
+                        .action(clap::ArgAction::Help)
+                        .help("Print help"),
+                ),
+        )
         .arg(
             arg!(-w --width [PX] "Cell width")
-                .required(true)
                 .value_parser(value_parser!(u8)),
         )
         .arg(
             arg!(-h --height [PX] "Cell height")
-                .required(true)
                 .value_parser(value_parser!(u8)),
         )
         .arg(
             arg!([FILE] "PNG/Aseprite Image")
-                .required(true)
                 .value_parser(value_parser!(PathBuf)),
         )
         .arg(
@@ -48,6 +92,7 @@ fn main() {
                 .value_parser(value_parser!(u8))
                 .help("Force uniform width. Without a value uses the widest glyph; with a value (e.g. -m 8) uses that width for all glyphs"),
         )
+        .subcommand_negates_reqs(true)
         .arg(
             Arg::new("help")
                 .long("help")
@@ -57,9 +102,53 @@ fn main() {
         .disable_help_flag(true)
         .get_matches();
 
-    let cell_width: u8 = *matches.get_one("width").expect("no width");
-    let cell_height: u8 = *matches.get_one("height").expect("no height");
-    let png_path: &PathBuf = matches.get_one("FILE").expect("no input");
+    if let Some(update_matches) = matches.subcommand_matches("update") {
+        let bin_path: &PathBuf = update_matches.get_one("BIN").expect("no bin file");
+        let img_path: &PathBuf = update_matches.get_one("IMAGE").expect("no image file");
+        run_update(bin_path, img_path);
+        return;
+    }
+
+    if let Some(edit_matches) = matches.subcommand_matches("edit") {
+        let bin_path: &PathBuf = edit_matches.get_one("FILE").expect("no file");
+
+        let gets: Vec<u8> = edit_matches
+            .get_many::<String>("get")
+            .unwrap_or_default()
+            .map(|s| parse_char_arg(s).unwrap_or_else(|e| panic!("--get {s:?}: {e}")))
+            .collect();
+
+        let sets: Vec<(u8, u8)> = edit_matches
+            .get_many::<String>("set")
+            .unwrap_or_default()
+            .map(|s| {
+                let (char_part, width_part) = s
+                    .split_once('=')
+                    .unwrap_or_else(|| panic!("--set {s:?}: expected CHAR=WIDTH format"));
+                let cp = parse_char_arg(char_part).unwrap_or_else(|e| panic!("--set {s:?}: {e}"));
+                let width = width_part
+                    .parse::<u8>()
+                    .unwrap_or_else(|e| panic!("--set {s:?}: invalid width: {e}"));
+                (cp, width)
+            })
+            .collect();
+
+        run_edit(bin_path, &gets, &sets);
+        return;
+    }
+
+    let cell_width: u8 = matches.get_one::<u8>("width").copied().unwrap_or_else(|| {
+        eprintln!("error: -w/--width is required for convert mode");
+        std::process::exit(1);
+    });
+    let cell_height: u8 = matches.get_one::<u8>("height").copied().unwrap_or_else(|| {
+        eprintln!("error: -h/--height is required for convert mode");
+        std::process::exit(1);
+    });
+    let png_path: &PathBuf = matches.get_one("FILE").unwrap_or_else(|| {
+        eprintln!("error: input FILE is required for convert mode");
+        std::process::exit(1);
+    });
     let output: Option<&PathBuf> = matches.get_one("output");
 
     let output_path: PathBuf = if let Some(output) = output {
@@ -81,20 +170,10 @@ fn main() {
         }
     };
 
-    let img = if png_path
-        .extension()
-        .map(|s| s.to_str() == Some("aseprite"))
-        .unwrap_or(false)
-    {
-        let ase = AsepriteFile::read_file(png_path).expect("Aseprite file could not be read");
-        DynamicImage::ImageRgba8(ase.frame(0).image())
-    } else {
-        image::open(png_path).unwrap_or_else(|e| panic!("Failed to open {:?}: {}", png_path, e))
-    };
+    let img = open_image(png_path);
 
-    let (img_width, img_height) = img.dimensions();
+    let (_, img_height) = img.dimensions();
 
-    // Detect mode from image dimensions: >= 16 cell rows -> 256-char, otherwise 95-char
     let cell_rows = img_height / cell_height as u32;
     let (glyph_count, mode_byte): (usize, u8) =
         if cell_rows as usize * SHEET_COLS >= GLYPH_COUNT_FULL {
@@ -103,51 +182,10 @@ fn main() {
             (GLYPH_COUNT_SMALL, 0)
         };
 
-    let sheet_rows = glyph_count.div_ceil(SHEET_COLS);
-
-    assert!(
-        img_width >= cell_width as u32 * SHEET_COLS as u32,
-        "Image width {} too small for {} columns of {} px cells",
-        img_width,
-        SHEET_COLS,
-        cell_width
-    );
-    assert!(
-        img_height >= cell_height as u32 * sheet_rows as u32,
-        "Image height {} too small for {} rows of {} px cells",
-        img_height,
-        sheet_rows,
-        cell_height
-    );
+    let data = extract_glyph_data(&img, cell_width, cell_height, glyph_count);
 
     let row_u32s = (cell_width as usize + 7) >> 3;
     let glyph_size = row_u32s * cell_height as usize;
-    let total_u32s = glyph_size * glyph_count;
-
-    let mut data: Vec<u32> = vec![0u32; total_u32s];
-
-    for glyph_idx in 0..glyph_count {
-        let sheet_col = glyph_idx % SHEET_COLS;
-        let sheet_row = glyph_idx / SHEET_COLS;
-        let base_x = sheet_col * cell_width as usize;
-        let base_y = sheet_row * cell_height as usize;
-        let glyph_base = glyph_idx * glyph_size;
-
-        for row in 0..cell_height as usize {
-            for word in 0..row_u32s {
-                let mut val: u32 = 0;
-                for px in 0..8usize {
-                    let x = base_x + word * 8 + px;
-                    if x < base_x + cell_width as usize {
-                        let pixel = img.get_pixel(x as u32, (base_y + row) as u32);
-                        let idx = pixel_to_index(pixel) as u32;
-                        val |= idx << (px * 4);
-                    }
-                }
-                data[glyph_base + row * row_u32s + word] = val;
-            }
-        }
-    }
 
     let mut char_widths = vec![cell_width; glyph_count];
     #[allow(clippy::needless_range_loop)]
