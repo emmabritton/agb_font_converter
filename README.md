@@ -52,11 +52,11 @@ The new image must produce the same font mode (full/small) as the existing binar
 Inspects or patches character widths in an existing `.bin` file without touching pixel data.
 
 ```sh
-agb_font_converter_eb edit font.bin                  # list all character widths
-agb_font_converter_eb edit font.bin -g A             # get width for 'A'
-agb_font_converter_eb edit font.bin --get A          # same, long form
-agb_font_converter_eb edit font.bin -s A=6           # set width for 'A' to 6
-agb_font_converter_eb edit font.bin --set A=6        # same, long form
+agb_font_converter_eb edit font.bin                     # list all character widths
+agb_font_converter_eb edit font.bin -g A                # get width for 'A'
+agb_font_converter_eb edit font.bin --get space         # get width for ' ', long form
+agb_font_converter_eb edit font.bin -s A=6              # set width for 'A' to 6
+agb_font_converter_eb edit font.bin --set A=6           # same, long form
 agb_font_converter_eb edit font.bin -g A -g B -s 32=4   # multiple ops in one call
 ```
 
@@ -64,7 +64,7 @@ Characters can be specified as:
 - A single ASCII character: `A`, `!`
 - A decimal code point: `65`, `32`
 - A hex code point: `0x41`, `0x20`
-- Thw word `space`
+- The word `space`
 
 ---
 
@@ -85,38 +85,38 @@ Image is a 16×6 grid of cells covering ASCII 32–126 (space through `~`), in c
 See `examples/alphanum_font.aseprite`.
 
 | Cell indices | Characters |
-|---|---|
-| 0 | space (32) |
-| 1–15 | `!` – `/` |
-| 16–25 | `0`–`9` |
-| 26–41 | `:` – `Z` |
-| 42–68 | `[` – `z` |
-| 69–94 | `{` – `~` |
+|--------------|------------|
+| 0            | space (32) |
+| 1–15         | `!` – `/`  |
+| 16–25        | `0`–`9`    |
+| 26–41        | `:` – `Z`  |
+| 42–68        | `[` – `z`  |
+| 69–94        | `{` – `~`  |
 
 ---
 
 ## Image format
 
-PNG and Aseprite files are supported (frame 0 is used for Aseprite). Images can use up to 15 shades of gray. Alpha < 50% is treated as transparent (palette index 0). Luma is calculated via BT.601.
+PNG and Aseprite files are supported (frame 0 is used for Aseprite). Images can use up to 15 shades of gray. Alpha < 50% is treated as transparent (palette index 0).
 
-| Luma | Palette index |
-|---|---|
-| 0–15 | 0 (transparent) |
-| 16–31 | 1 |
-| 32–47 | 2 |
-| 48–63 | 3 |
-| 64–79 | 4 |
-| 80–95 | 5 |
-| 96–111 | 6 |
-| 112–127 | 7 |
-| 128–143 | 8 |
-| 144–159 | 9 |
-| 160–175 | 10 |
-| 176–191 | 11 |
-| 192–207 | 12 |
-| 208–223 | 13 |
-| 224–239 | 14 |
-| 240–255 | 15 |
+| Grey    | Palette index   |
+|---------|-----------------|
+| 0–15    | 0 (transparent) |
+| 16–31   | 1               |
+| 32–47   | 2               |
+| 48–63   | 3               |
+| 64–79   | 4               |
+| 80–95   | 5               |
+| 96–111  | 6               |
+| 112–127 | 7               |
+| 128–143 | 8               |
+| 144–159 | 9               |
+| 160–175 | 10              |
+| 176–191 | 11              |
+| 192–207 | 12              |
+| 208–223 | 13              |
+| 224–239 | 14              |
+| 240–255 | 15              |
 
 ---
 

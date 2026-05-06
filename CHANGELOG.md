@@ -1,3 +1,8 @@
+# v0.4.0
+
+- Add editing (get and set individual character widths)
+- Add updating (replace font images without changing widths/sizes)
+
 # v0.3.0
 
 - Add support for forcing monospace
