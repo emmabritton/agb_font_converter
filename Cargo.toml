@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "program",
     "gba_agb_font_loader_eb",
-    "common"
+    "gba_agb_font_creation_internals"
 ]
 
 [workspace.package]

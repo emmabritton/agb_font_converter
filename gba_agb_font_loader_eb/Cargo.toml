@@ -5,12 +5,15 @@ authors.workspace = true
 description.workspace = true
 edition.workspace = true
 publish = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
 
 [lib]
 proc-macro = true
 
 [dependencies]
-common = {path = "../common"}
+common = "0.6.0"
 syn = { version = "2", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
