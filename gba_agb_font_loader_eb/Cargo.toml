@@ -14,4 +14,4 @@ common = {path = "../common"}
 syn = { version = "2", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
-gba_agb_font_eb = {path="../../gba_agb_font_eb"}
+gba_agb_font_eb = "0.6.0"

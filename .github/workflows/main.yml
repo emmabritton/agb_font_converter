@@ -7,9 +7,22 @@ on:
       - v*
 
 jobs:
+  check:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Check
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets -- -D clippy::all
+
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    name: Build and Release
+    needs: [check]
+    name: Publish macro lib
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v6
@@ -17,14 +30,27 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets -- -D clippy::all
-      - run: cargo build --release
+      - run: cargo publish --package gba_agb_font_loader --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+  make_bin:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check]
+    name: Build bin
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          components: clippy, rustfmt
+
+      - run: cargo build --package program --release
       - run: |
           cd target/release
-          mv agb_font_converter_eb converter
-          strip converter
-          tar cvf ../../converter_mac.tar.gz converter
+          mv program font_converter
+          strip font_converter
+          tar cvf ../../converter_mac.tar.gz font_converter
           cd -
       - uses: softprops/action-gh-release@v3
         with:
