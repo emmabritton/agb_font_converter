@@ -1,0 +1,17 @@
+[package]
+name = "gba_agb_font_loader"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+publish = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+common = {path = "../common"}
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+gba_agb_font_eb = {path="../../gba_agb_font_eb"}

@@ -1,0 +1,11 @@
+[package]
+name = "common"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+image.workspace = true
+asefile.workspace = true

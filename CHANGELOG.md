@@ -1,3 +1,7 @@
+# v0.6.0
+
+- Add macro to create font from image file directly
+
 # v0.4.0
 
 - Add editing (get and set individual character widths)

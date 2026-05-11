@@ -5,9 +5,9 @@ Converts Aseprite/PNG font sheets to the [AGB Font format](https://github.com/em
 ## Usage
 
 ```
-agb_font_converter_eb [OPTIONS] --width <PX> --height <PX> <FILE>
-agb_font_converter_eb update <BIN> <IMAGE>
-agb_font_converter_eb edit <FILE> [--get <CHAR>] [--set <CHAR=WIDTH>]
+font_converter [OPTIONS] --width <PX> --height <PX> <FILE>
+font_converter update <BIN> <IMAGE>
+font_converter edit <FILE> [--get <CHAR>] [--set <CHAR=WIDTH>]
 ```
 
 ---
@@ -17,10 +17,10 @@ agb_font_converter_eb edit <FILE> [--get <CHAR>] [--set <CHAR=WIDTH>]
 Reads a font sheet image and writes a `.bin` file.
 
 ```sh
-agb_font_converter_eb -w 8 -h 8 font.aseprite
-agb_font_converter_eb -w 8 -h 8 font.png -o out.bin
-agb_font_converter_eb -w 8 -h 8 font.png -m        # monospace: use widest glyph
-agb_font_converter_eb -w 8 -h 8 font.png -m 8      # monospace: force width to 8px
+font_converter -w 8 -h 8 font.aseprite
+font_converter -w 8 -h 8 font.png -o out.bin
+font_converter -w 8 -h 8 font.png -m        # monospace: use widest glyph
+font_converter -w 8 -h 8 font.png -m 8      # monospace: force width to 8px
 ```
 
 | Flag                       | Description                                                                                                |
@@ -39,8 +39,8 @@ The output path defaults to the input filename with a `.bin` extension, written 
 Replaces the pixel data in an existing `.bin` file from a new image, preserving all stored character widths.
 
 ```sh
-agb_font_converter_eb update font.bin new_sheet.png
-agb_font_converter_eb update font.bin new_sheet.aseprite
+font_converter update font.bin new_sheet.png
+font_converter update font.bin new_sheet.aseprite
 ```
 
 The new image must produce the same font mode (full/small) as the existing binary.
@@ -52,12 +52,12 @@ The new image must produce the same font mode (full/small) as the existing binar
 Inspects or patches character widths in an existing `.bin` file without touching pixel data.
 
 ```sh
-agb_font_converter_eb edit font.bin                     # list all character widths
-agb_font_converter_eb edit font.bin -g A                # get width for 'A'
-agb_font_converter_eb edit font.bin --get space         # get width for ' ', long form
-agb_font_converter_eb edit font.bin -s A=6              # set width for 'A' to 6
-agb_font_converter_eb edit font.bin --set A=6           # same, long form
-agb_font_converter_eb edit font.bin -g A -g B -s 32=4   # multiple ops in one call
+font_converter edit font.bin                     # list all character widths
+font_converter edit font.bin -g A                # get width for 'A'
+font_converter edit font.bin --get space         # get width for ' ', long form
+font_converter edit font.bin -s A=6              # set width for 'A' to 6
+font_converter edit font.bin --set A=6           # same, long form
+font_converter edit font.bin -g A -g B -s 32=4   # multiple ops in one call
 ```
 
 Characters can be specified as:

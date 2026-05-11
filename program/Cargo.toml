@@ -1,0 +1,11 @@
+[package]
+name = "program"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+clap.workspace = true
+common = {path = "../common"}
