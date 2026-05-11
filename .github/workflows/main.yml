@@ -45,7 +45,7 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - run: cargo publish --package gba_agb_font_loader_eb --token ${CRATES_TOKEN}
+      - run: cargo publish --package gba_agb_font_loader --token ${CRATES_TOKEN}
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
