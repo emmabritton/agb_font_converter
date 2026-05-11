@@ -2,9 +2,9 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    braced,
+    LitChar, LitInt, LitStr, Token, braced,
     parse::{Parse, ParseStream},
-    parse_macro_input, LitChar, LitInt, LitStr, Token,
+    parse_macro_input,
 };
 
 struct Args {
@@ -97,7 +97,15 @@ impl Parse for Args {
             return Err(syn::Error::new(Span::call_site(), "unexpected tokens"));
         }
 
-        Ok(Args { vis, name, path, cell_width, cell_height, monospace, width_overrides })
+        Ok(Args {
+            vis,
+            name,
+            path,
+            cell_width,
+            cell_height,
+            monospace,
+            width_overrides,
+        })
     }
 }
 
@@ -124,8 +132,7 @@ impl Parse for Args {
 pub fn include_agb_font(input: TokenStream) -> TokenStream {
     let args = parse_macro_input!(input as Args);
 
-    let manifest_dir =
-        std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| String::from("."));
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| String::from("."));
     let full_path = std::path::Path::new(&manifest_dir).join(args.path.value());
     let full_path_buf = full_path.to_path_buf();
 
