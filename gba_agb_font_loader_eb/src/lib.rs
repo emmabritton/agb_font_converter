@@ -136,8 +136,8 @@ pub fn include_agb_font(input: TokenStream) -> TokenStream {
     let full_path = std::path::Path::new(&manifest_dir).join(args.path.value());
     let full_path_buf = full_path.to_path_buf();
 
-    let img = common::parsing::open_image(&full_path_buf);
-    let bytes = common::create::create_bytes(
+    let img = gba_agb_font_creation_internals::parsing::open_image(&full_path_buf);
+    let bytes = gba_agb_font_creation_internals::create::create_bytes(
         args.cell_width,
         args.cell_height,
         &img,

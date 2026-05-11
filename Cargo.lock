@@ -161,14 +161,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
-name = "common"
-version = "0.6.0"
-dependencies = [
- "asefile",
- "image",
-]
-
-[[package]]
 name = "crc32fast"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -197,6 +189,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "gba_agb_font_creation_internals"
+version = "0.6.0"
+dependencies = [
+ "asefile",
+ "image",
+]
+
+[[package]]
 name = "gba_agb_font_eb"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -206,7 +206,7 @@ checksum = "e11417a36d4193e982d93d76b5baa1bea29d08fce3abb34456bc58bc255bf3be"
 name = "gba_agb_font_loader"
 version = "0.6.0"
 dependencies = [
- "common",
+ "gba_agb_font_creation_internals",
  "gba_agb_font_eb",
  "proc-macro2",
  "quote",
@@ -302,7 +302,7 @@ name = "program"
 version = "0.6.0"
 dependencies = [
  "clap",
- "common",
+ "gba_agb_font_creation_internals",
 ]
 
 [[package]]

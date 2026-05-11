@@ -13,7 +13,7 @@ repository.workspace = true
 proc-macro = true
 
 [dependencies]
-common = "0.6.0"
+gba_agb_font_creation_internals = { version = "0.6.0", path = "../gba_agb_font_creation_internals" }
 syn = { version = "2", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"

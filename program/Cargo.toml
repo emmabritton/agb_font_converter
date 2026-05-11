@@ -8,4 +8,4 @@ publish.workspace = true
 
 [dependencies]
 clap.workspace = true
-common = {path = "../gba_agb_font_creation_internals" }
+gba_agb_font_creation_internals = {path = "../gba_agb_font_creation_internals" }

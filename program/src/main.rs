@@ -1,8 +1,8 @@
 use clap::{Arg, ArgAction, Command, arg, command, value_parser};
-use common::create::create;
-use common::edit::run_edit;
-use common::parsing::parse_char_arg;
-use common::update::run_update;
+use gba_agb_font_creation_internals::create::create;
+use gba_agb_font_creation_internals::edit::run_edit;
+use gba_agb_font_creation_internals::parsing::parse_char_arg;
+use gba_agb_font_creation_internals::update::run_update;
 use std::path::PathBuf;
 
 fn main() {
