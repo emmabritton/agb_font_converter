@@ -1,3 +1,7 @@
+# v0.24.0
+
+- No changes, update version to match other font libraries 
+
 # v0.6.0
 
 - Add macro to create font from image file directly

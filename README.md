@@ -9,8 +9,8 @@ Converts Aseprite/PNG font sheets to the [AGB Font format](https://github.com/em
 `Cargo.toml`
 
 ```toml
-gba_agb_font_eb = "0.6.0" #contains the font
-gba_agb_font_loader = "0.6.0"
+gba_agb_font_eb = "0.24.0" #contains the font
+gba_agb_font_loader = "0.24.0"
 ```
 
 ### Syntax
