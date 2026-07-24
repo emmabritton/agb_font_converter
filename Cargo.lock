@@ -198,9 +198,9 @@ dependencies = [
 
 [[package]]
 name = "gba_agb_font_eb"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1814fee25b318e23200be344cf1321aa212769de883fcb127608af8ed172d381"
+checksum = "ec81a3455366d42f2d4d76661603cc68a16114b581751c83e180e5c59a6a468e"
 
 [[package]]
 name = "gba_agb_font_loader"

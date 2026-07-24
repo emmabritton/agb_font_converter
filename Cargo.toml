@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.24.0"
+version = "0.25.0"
 edition = "2024"
 authors = ["Emma Britton <emmabritton@pm.me>"]
 description = "Converter for font format for AGB"
@@ -20,6 +20,7 @@ publish = false
 image = { version = "0.24", default-features = false, features = ["png"] }
 clap = { version = "4.6", features = ["derive","cargo"] }
 asefile = "0.3"
+gba_agb_font_eb = "0.25.0"
 
 [profile.release]
 opt-level = 3
