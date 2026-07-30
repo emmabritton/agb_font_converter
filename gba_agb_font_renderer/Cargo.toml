@@ -1,0 +1,17 @@
+[package]
+name = "gba_agb_font_renderer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Bitmap font renderer for GBA/AGB"
+license-file.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+publish = true
+
+[dependencies]
+agb = "0.25.0"
+gba_agb_font_eb = { version = "0.25.1", path = "../gba_agb_font_eb" }
+gba_agb_font_loader = { version = "0.25.1", path = "../gba_agb_font_loader_eb" }

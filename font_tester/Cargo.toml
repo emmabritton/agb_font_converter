@@ -1,0 +1,15 @@
+[package]
+name = "font_tester"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "GBA test ROM for previewing the example fonts"
+publish = false
+
+# Targets thumbv4t-none-eabi on nightly via this directory's .cargo/config.toml and
+# rust-toolchain.toml, which cargo picks up when run from here. Build it from this directory.
+# Deliberately depends on the renderer alone: this is the end-to-end check that its
+# re-exports give a consumer both `include_agb_font!` and the font types.
+[dependencies]
+agb = "0.25.0"
+gba_agb_font_renderer = { version = "0.25.1", path = "../gba_agb_font_renderer" }

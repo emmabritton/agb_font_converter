@@ -1,10 +1,20 @@
+# v0.25.1
+
+- Re-export `include_agb_font!` and the `gba_agb_font_eb` crate, so depending on the renderer
+  alone is enough to declare and render a font.
+- Add `letter_spacing` and `line_spacing` to `TextRenderer` and `SpriteTextRenderer`
+
+**Breaking**
+
+- Some methods, such as `size_of`
+
 # v0.25.0
 
-No changes, but for simplicity as the renderer is tied to AGBs version, these libraries will match AGBs version number
+- No changes, but for simplicity as the renderer is tied to AGBs version, these libraries will match AGBs version number
 
 # v0.24.0
 
-- No changes, update version to match other font libraries 
+- No changes, but for simplicity as the renderer is tied to AGBs version, these libraries will match AGBs version number
 
 # v0.6.0
 

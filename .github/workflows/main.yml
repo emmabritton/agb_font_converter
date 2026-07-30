@@ -16,8 +16,43 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.94.1
         with:
           components: clippy, rustfmt
+      # `--workspace` would try to build the agb-dependent members for the host, so the
+      # host crates are named explicitly. `cargo fmt` doesn't compile, so it covers them all.
       - run: cargo fmt --all -- --check
+      - run: cargo clippy -p gba_agb_font_eb -p gba_agb_font_loader -p gba_agb_font_creation_internals --all-targets -- -D clippy::all
+      - run: cargo test -p gba_agb_font_eb -p gba_agb_font_loader -p gba_agb_font_creation_internals
+
+  # The agb-dependent members build for thumbv4t-none-eabi on nightly, picked up from the
+  # .cargo/config.toml in each directory, so they must be checked from inside them.
+  check_gba:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Check GBA crates
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt, rust-src
       - run: cargo clippy --all-targets -- -D clippy::all
+        working-directory: gba_agb_font_renderer
+      - run: cargo clippy --all-targets -- -D clippy::all
+        working-directory: font_tester
+
+  # gba_agb_font_eb goes first: both the macro and the renderer depend on it.
+  publish_font:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check]
+    name: Publish font lib
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          components: clippy, rustfmt
+
+      - run: cargo publish --package gba_agb_font_eb --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
   publish_internals:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -36,7 +71,7 @@ jobs:
 
   publish_macro:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [ publish_internals ]
+    needs: [ publish_internals, publish_font ]
     name: Publish macro lib
     runs-on: macOS-latest
     steps:
@@ -49,24 +84,20 @@ jobs:
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
-  make_bin:
+  publish_renderer:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [check]
-    name: Build bin
+    needs: [ check_gba, publish_font ]
+    name: Publish renderer lib
     runs-on: macOS-latest
+    defaults:
+      run:
+        working-directory: gba_agb_font_renderer
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.94.1
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          components: clippy, rustfmt
+          components: clippy, rustfmt, rust-src
 
-      - run: cargo build --package program --release
-      - run: |
-          cd target/release
-          mv program font_converter
-          strip font_converter
-          tar cvf ../../converter_mac.tar.gz font_converter
-          cd -
-      - uses: softprops/action-gh-release@v3
-        with:
-          files: converter_mac.tar.gz
+      - run: cargo publish --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}

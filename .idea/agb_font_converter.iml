@@ -8,6 +8,12 @@
       <sourceFolder url="file://$MODULE_DIR$/macro/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/program/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gba_agb_font_creation_internals/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/font_tester/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/gba_agb_font_eb/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/gba_agb_font_renderer/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/gba_agb_font_creation_internals/examples" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/font_tester/target" />
+      <excludeFolder url="file://$MODULE_DIR$/gba_agb_font_renderer/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

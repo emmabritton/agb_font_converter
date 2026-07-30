@@ -1,13 +1,15 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
-    "program",
     "gba_agb_font_loader_eb",
-    "gba_agb_font_creation_internals"
+    "gba_agb_font_creation_internals",
+    "gba_agb_font_eb",
+    "gba_agb_font_renderer",
+    "font_tester"
 ]
 
 [workspace.package]
-version = "0.25.0"
+version = "0.25.1"
 edition = "2024"
 authors = ["Emma Britton <emmabritton@pm.me>"]
 description = "Converter for font format for AGB"
@@ -15,12 +17,12 @@ license-file = "LICENSE"
 repository = "https://github.com/emmabritton/agb_font_converter"
 readme = "README.md"
 publish = false
+keywords = ["gba", "agb", "retro", "font", "gamedev"]
+categories = ["game-development", "rendering"]
 
 [workspace.dependencies]
 image = { version = "0.24", default-features = false, features = ["png"] }
-clap = { version = "4.6", features = ["derive","cargo"] }
 asefile = "0.3"
-gba_agb_font_eb = "0.25.0"
 
 [profile.release]
 opt-level = 3
