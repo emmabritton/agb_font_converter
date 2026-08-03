@@ -224,7 +224,8 @@ impl App {
             self.dirty = true;
         }
 
-        if button_controller.is_just_pressed(Button::Right) && self.text_renderer.letter_spacing < 4 {
+        if button_controller.is_just_pressed(Button::Right) && self.text_renderer.letter_spacing < 4
+        {
             self.text_renderer.letter_spacing += 1;
             self.dirty = true;
         } else if button_controller.is_just_pressed(Button::Left)

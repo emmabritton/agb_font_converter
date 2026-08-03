@@ -16,14 +16,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.94.1
         with:
           components: clippy, rustfmt
-      # `--workspace` would try to build the agb-dependent members for the host, so the
-      # host crates are named explicitly. `cargo fmt` doesn't compile, so it covers them all.
       - run: cargo fmt --all -- --check
       - run: cargo clippy -p gba_agb_font_eb -p gba_agb_font_loader -p gba_agb_font_creation_internals --all-targets -- -D clippy::all
       - run: cargo test -p gba_agb_font_eb -p gba_agb_font_loader -p gba_agb_font_creation_internals
 
-  # The agb-dependent members build for thumbv4t-none-eabi on nightly, picked up from the
-  # .cargo/config.toml in each directory, so they must be checked from inside them.
   check_gba:
     if: startsWith(github.ref, 'refs/tags/v')
     name: Check GBA crates
@@ -38,11 +34,10 @@ jobs:
       - run: cargo clippy --all-targets -- -D clippy::all
         working-directory: font_tester
 
-  # gba_agb_font_eb goes first: both the macro and the renderer depend on it.
   publish_font:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [check]
-    name: Publish font lib
+    name: Publish font
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v6
@@ -57,7 +52,7 @@ jobs:
   publish_internals:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [check]
-    name: Publish internals lib
+    name: Publish internals
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v6
@@ -72,7 +67,7 @@ jobs:
   publish_macro:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [ publish_internals, publish_font ]
-    name: Publish macro lib
+    name: Publish macros
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v6
@@ -87,7 +82,7 @@ jobs:
   publish_renderer:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [ check_gba, publish_font ]
-    name: Publish renderer lib
+    name: Publish renderer
     runs-on: macOS-latest
     defaults:
       run:
