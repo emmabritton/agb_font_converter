@@ -81,7 +81,7 @@ jobs:
 
   publish_renderer:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [ check_gba, publish_font ]
+    needs: [ check_gba, publish_macro ]
     name: Publish renderer
     runs-on: macOS-latest
     defaults:
