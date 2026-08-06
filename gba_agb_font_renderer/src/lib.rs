@@ -41,7 +41,7 @@ pub struct TextFormat {
     /// before drawing; `(0, 0)` disables it
     ///
     /// Sized from roman measures (`size_of`, previous `draw_text` returns); with a
-    /// styled (italic/bold) font the renderer widens the clear by the font's
+    /// styled (bold) font the renderer widens the clear by the font's
     /// [`right_overhang`](gba_agb_font_eb::AgbFont::right_overhang) so overhanging
     /// ink is erased too
     pub clear: (u16, u16),

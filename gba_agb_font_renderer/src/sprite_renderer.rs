@@ -107,7 +107,7 @@ impl SpriteTextRenderer {
         let mut longest: i32 = 0;
         let mut last_cx = pos.x;
         let spacing = self.letter_spacing;
-        // Styled (italic/bold) ink may extend past the last glyph's advance, so
+        // Styled (bold) ink may extend past the last glyph's advance, so
         // sprite packing keeps that many columns free for it
         let overhang = font.right_overhang() as i32;
 

@@ -430,7 +430,7 @@ impl MultiTypewriterRenderer {
             TextAlign::Left => w,
             TextAlign::Center(cw) | TextAlign::Right(cw) => w.max(cw as i32),
         };
-        // Styled (italic/bold) ink may overhang the measured width
+        // Styled (bold) ink may overhang the measured width
         let w = w + slot.font.right_overhang() as i32;
         renderer.clear_pixel_rect(slot.start, w, h);
     }

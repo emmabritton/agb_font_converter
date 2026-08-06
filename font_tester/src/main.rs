@@ -7,7 +7,7 @@
 extern crate alloc;
 
 use agb::display::tiled::{RegularBackground, RegularBackgroundSize, TileFormat};
-use agb::display::{GraphicsFrame, Priority, Rgb15};
+use agb::display::{GraphicsFrame, Priority, Rgb, Rgb15};
 use agb::fixnum::vec2;
 use agb::input::{Button, ButtonController};
 use alloc::format;
@@ -16,81 +16,108 @@ use alloc::string::String;
 // dependency here.
 use gba_agb_font_renderer::prelude::*;
 
-include_agb_font!(SIMPLE, "../examples/font_simple_idx0.aseprite");
 include_agb_font!(
-    SIMPLE_SHADOW,
-    "../examples/font_simple_idx0shadow1.aseprite"
+    LIMITED_BLOCKY,
+    "../examples/limited_blocky_3x5_text15.aseprite"
 );
-include_agb_font!(SEGMENT, "../examples/font_8segment_idx0.aseprite");
-include_agb_font!(FANTASY, "../examples/font_fantasy_idx0shadow1.aseprite");
+include_agb_font!(BLOCKY, "../examples/blocky_3x7_text15.aseprite");
+include_agb_font!(VHS, "../examples/vhs_10x16_text15.aseprite");
+include_agb_font!(SEGMENT, "../examples/segment_8x8_text15_shadow14.aseprite");
 include_agb_font!(
     BALLOON,
-    "../examples/font_balloon_idx0shadow1outline2.aseprite"
+    "../examples/balloon_14x14_text15_shadow14_outline13.aseprite"
 );
-include_agb_font!(MONO_0, "../examples/mono_3x5_idx0.aseprite");
-include_agb_font!(MONO_1, "../examples/mono_3x5_idx1.aseprite");
+include_agb_font!(WESTERN, "../examples/western_13x14_text15.aseprite");
+include_agb_font!(SERIF_7, "../examples/serif_7x10_text15_shadow14.aseprite");
+include_agb_font!(SERIF_9, "../examples/serif_9x10_text15.aseprite");
+include_agb_font!(SERIF_11, "../examples/serif_11x10_text15.aseprite");
+include_agb_font!(GOTHIC, "../examples/gothic_16x14_text15.aseprite", widths = {'q' = 5});
+include_agb_font!(PLAIN, "../examples/plain_8x8_text15.aseprite");
+include_agb_font!(SIMPLE_8, "../examples/simple_8x8_text15_shadow14.aseprite");
+include_agb_font!(SIMPLE_12, "../examples/simple_12x14_text15.aseprite");
+include_agb_font!(
+    SIMPLE_16,
+    "../examples/simple_16x16_text15_shadow14.aseprite"
+);
+include_agb_font!(RETRO, "../examples/retro_8x9_text15.aseprite");
+include_agb_font!(SCRIPT, "../examples/script_12x15_text15.aseprite");
+include_agb_font!(DOT, "../examples/dot_16x16_text15.aseprite");
+include_agb_font!(FANTASY, "../examples/fantasy_8x10_text15_shadow14.aseprite");
+include_agb_font!(CHROME, "../examples/chrome_effect.aseprite");
 include_agb_font!(FULL, "../examples/full_font.aseprite", full);
 
 include_agb_font!(
-    SIMPLE_MONO,
-    "../examples/font_simple_idx0.aseprite",
+    PLAIN_MONO,
+    "../examples/plain_8x8_text15.aseprite",
     monospace
 );
 include_agb_font!(
     SEGMENT_MONO,
-    "../examples/font_8segment_idx0.aseprite",
+    "../examples/segment_8x8_text15_shadow14.aseprite",
     monospace
 );
-include_agb_font!(MONO_1_MONO, "../examples/mono_3x5_idx1.aseprite", monospace);
 include_agb_font!(
-    SIMPLE_STYLED,
-    "../examples/font_simple_idx0.aseprite",
-    italic,
+    LIMITED_BLOCKY_MONO,
+    "../examples/limited_blocky_3x5_text15.aseprite",
+    monospace
+);
+include_agb_font!(
+    PLAIN_STYLED,
+    "../examples/plain_8x8_text15.aseprite",
     bold
 );
 include_agb_font!(
-    SIMPLE_RECOLOURED,
-    "../examples/font_simple_idx0.aseprite",
-    recolour = { 15 = 13 }
+    PLAIN_RECOLOURED,
+    "../examples/plain_8x8_text15.aseprite",
+    recolor = { 15 = 13 }
 );
 
-static UI_FONT: &PrintableFont = &SIMPLE;
+static UI_FONT: &PrintableFont = &PLAIN;
 
-static FONTS: &[(&[u8], SlotFont)] = &[
-    (b"font_simple_idx0", SlotFont::Printable(&SIMPLE)),
+static FONTS: &[(&[u8], SlotFont, bool, u8)] = &[
     (
-        b"font_simple_idx0shadow1",
-        SlotFont::Printable(&SIMPLE_SHADOW),
+        b"limited_blocky_3x5_text15",
+        SlotFont::Printable(&LIMITED_BLOCKY),
+        false,1
     ),
-    (b"font_8segment_idx0", SlotFont::Printable(&SEGMENT)),
-    (b"font_fantasy_idx0shadow1", SlotFont::Printable(&FANTASY)),
+    (b"blocky_3x7_text15", SlotFont::Printable(&BLOCKY),false,1),
+    (b"vhs_10x16_text15", SlotFont::Printable(&VHS),true,1),
     (
-        b"font_balloon_idx0shadow1outline2",
+        b"segment_8x8_text15_shadow14",
+        SlotFont::Printable(&SEGMENT),
+        false,1
+    ),
+    (
+        b"balloon_14x14_text15_shadow14_outline13",
         SlotFont::Printable(&BALLOON),
+        true,1
     ),
-    (b"mono_3x5_idx0", SlotFont::Printable(&MONO_0)),
-    (b"mono_3x5_idx1", SlotFont::Printable(&MONO_1)),
-    (b"full_font", SlotFont::Full(&FULL)),
+    (b"western_13x14_text15", SlotFont::Printable(&WESTERN), true,1),
+    (b"serif_7x10_text15_shadow14", SlotFont::Printable(&SERIF_7),false,1),
+    (b"serif_9x10_text15", SlotFont::Printable(&SERIF_9),false,1),
+    (b"serif_11x10_text15", SlotFont::Printable(&SERIF_11),false,1),
+    (b"gothic_16x14_text15", SlotFont::Printable(&GOTHIC),true,1),
+    (b"plain_8x8_text15", SlotFont::Printable(&PLAIN),false,1),
     (
-        b"font_simple_idx0 (monospace)",
-        SlotFont::Printable(&SIMPLE_MONO),
+        b"simple_8x8_text15_shadow14",
+        SlotFont::Printable(&SIMPLE_8),
+        false,1
     ),
+    (b"simple_12x14_text15", SlotFont::Printable(&SIMPLE_12),true,1),
     (
-        b"font_8segment_idx0 (monospace)",
-        SlotFont::Printable(&SEGMENT_MONO),
+        b"simple_16x16_text15_shadow14",
+        SlotFont::Printable(&SIMPLE_16),
+        true,1
     ),
+    (b"retro_8x9_text15", SlotFont::Printable(&RETRO),false,1),
+    (b"script_12x15_text15", SlotFont::Printable(&SCRIPT), true,1),
+    (b"dot_16x16_text15", SlotFont::Printable(&DOT),true,4),
     (
-        b"mono_3x5_idx1 (monospace)",
-        SlotFont::Printable(&MONO_1_MONO),
+        b"fantasy_8x10_text15_shadow14",
+        SlotFont::Printable(&FANTASY),
+     true,1
     ),
-    (
-        b"font_simple_idx0 (italic bold)",
-        SlotFont::Printable(&SIMPLE_STYLED),
-    ),
-    (
-        b"font_simple_idx0 (recolour 15=13)",
-        SlotFont::Printable(&SIMPLE_RECOLOURED),
-    ),
+    (b"full_font", SlotFont::Full(&FULL), false,1),
 ];
 
 static TEXT: &[u8] = br##" !"#$%&'()*+,-./
@@ -107,16 +134,27 @@ Example Number: 45.6 (sym!)
 Hyphen-aware word-wrapping over-engineered anti-disestablishmentarianism
 "##;
 
+
+static TALL_TEXT: &[u8] = br##" !"#$%&'()*+,-./
+0123456789:;<=>?
+@ABCDEFGHIJKLMNO
+PQRSTUVWXYZ[\]^_
+`abcdefghijklmno
+pqrstuvwxyz{|}~
+
+The quick brown fox jumps over the lazy dog.
+"##;
+
 fn log_metrics() {
     agb::println!("font_tester: {} fonts, {} samples", FONTS.len(), TEXT.len());
-    for (name, font) in FONTS {
+    for (name, font, _, _) in FONTS {
         let height = font.glyph_height();
         let (w, h) = font.size_of(TEXT, Some(220), 0, 0);
         let name = String::from_utf8_lossy(name);
         agb::println!("  {name} text: {w}x{h}px (glyph h={height})");
     }
 
-    for (name, font) in FONTS {
+    for (name, font, _, _) in FONTS {
         let name = String::from_utf8_lossy(name);
         let (one_tight, _) = font.size_of(b"M", None, -1, 0);
         let (one, _) = font.size_of(b"M", None, 0, 0);
@@ -138,7 +176,7 @@ fn log_metrics() {
         assert!(tight >= 4, "{name}: -1 spacing collapsed below 1px/char");
     }
 
-    for (name, font) in FONTS {
+    for (name, font, _, _) in FONTS {
         let name = String::from_utf8_lossy(name);
         let (_, one) = font.size_of(b"M", None, 0, 0);
         let (_, one_wide) = font.size_of(b"M", None, 0, 3);
@@ -164,23 +202,23 @@ fn log_metrics() {
     // Styling must not touch metrics: advances stay roman, only the stored
     // overhang differs
     assert_eq!(
-        SIMPLE.char_widths, SIMPLE_STYLED.char_widths,
+        PLAIN.char_widths, PLAIN_STYLED.char_widths,
         "styled font changed roman advances"
     );
     assert_eq!(
-        SIMPLE_STYLED.right_overhang(),
-        3,
-        "bare italic + bold should store overhang 2*1 + 1"
+        PLAIN_STYLED.right_overhang(),
+        1,
+        "bare bold should store overhang of 1"
     );
-    assert_eq!(SIMPLE.right_overhang(), 0, "roman font gained an overhang");
+    assert_eq!(PLAIN.right_overhang(), 0, "roman font gained an overhang");
 
     // Recolour must not touch metrics or overhang, only pixel data
     assert_eq!(
-        SIMPLE.char_widths, SIMPLE_RECOLOURED.char_widths,
+        PLAIN.char_widths, PLAIN_RECOLOURED.char_widths,
         "recoloured font changed advances"
     );
     assert_eq!(
-        SIMPLE_RECOLOURED.right_overhang(),
+        PLAIN_RECOLOURED.right_overhang(),
         0,
         "recolour should not store an overhang"
     );
@@ -199,6 +237,9 @@ fn main(mut gba: agb::Gba) -> ! {
     gfx.set_background_palette_colour(15, 15, Rgb15::WHITE);
     gfx.set_background_palette_colour(15, 14, Rgb15::BLACK);
     gfx.set_background_palette_colour(15, 13, Rgb15(0x7ffa));
+    gfx.set_background_palette_colour(15, 11, Rgb15::from(Rgb::new(140,0,0)));
+    gfx.set_background_palette_colour(15, 7, Rgb15::from(Rgb::new(0,140,0)));
+    gfx.set_background_palette_colour(15, 9, Rgb15::from(Rgb::new(0,0,140)));
 
     let mut state = App::new();
 
@@ -268,33 +309,14 @@ impl App {
             self.dirty = true;
         }
 
-        if button_controller.is_just_pressed(Button::Right) && self.text_renderer.letter_spacing < 4
-        {
-            self.text_renderer.letter_spacing += 1;
-            self.dirty = true;
-        } else if button_controller.is_just_pressed(Button::Left)
-            && self.text_renderer.letter_spacing > -2
-        {
-            self.text_renderer.letter_spacing -= 1;
-            self.dirty = true;
-        }
-        if button_controller.is_just_pressed(Button::Up) && self.text_renderer.line_spacing < 4 {
-            self.text_renderer.line_spacing += 1;
-            self.dirty = true;
-        } else if button_controller.is_just_pressed(Button::Down)
-            && self.text_renderer.line_spacing > -2
-        {
-            self.text_renderer.line_spacing -= 1;
-            self.dirty = true;
-        }
-
         if self.dirty {
+            self.text_renderer.letter_spacing = FONTS[self.font].3 as i8;
             self.text_renderer.reset(false);
             self.text_renderer.draw_text(
-                TEXT,
+                if FONTS[self.font].2 { TALL_TEXT }else {TEXT},
                 &FONTS[self.font].1,
                 &mut self.bg_text,
-                vec2(6, 14),
+                vec2(4, 10),
                 &FORMAT,
             );
 
@@ -306,17 +328,6 @@ impl App {
                 &FORMAT_INFO,
             );
 
-            let spacing_info = format!(
-                "ls {} lh {}",
-                self.text_renderer.letter_spacing, self.text_renderer.line_spacing
-            );
-            self.text_renderer.draw_text(
-                spacing_info.as_bytes(),
-                UI_FONT,
-                &mut self.bg_text,
-                vec2(1, 1),
-                &TextFormat::default(),
-            );
             self.dirty = false;
         }
     }

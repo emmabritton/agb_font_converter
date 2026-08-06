@@ -1,10 +1,13 @@
 # Unreleased
 
-- Add `italic` and `bold` arguments to `include_agb_font!` (bare = strength 1, or `= N`).
-  Both are pack-time transforms: italic shears the top third of each glyph right by `2*N`px
-  and the middle third by `N`px; bold smears each pixel over its `N` left neighbours.
-  Advance widths stay roman, so styled ink overhangs the next letter like natural kerning.
-- Store the max styled overhang (`2*italic + bold`) in the previously unused header padding
+- Add a `bold` argument to `include_agb_font!` (bare = strength 1, or `= N`), a pack-time
+  transform smearing each pixel over its `N` left neighbours. Advance widths stay roman, so
+  the thickened ink overhangs the next letter like natural kerning. The packed cell is
+  widened by `bold` pixels at pack time, so glyphs drawn flush against the right edge of
+  their cell thicken losslessly with no sheet padding. (An `italic` shear was tried and
+  removed: splitting rows into thirds by cell height slants glyphs that don't fill the
+  cell wrongly.)
+- Store the max styled overhang (`bold`) in the previously unused header padding
   byte (offset 259 full / 98 small; old fonts read as 0) and expose it as
   `AgbFont::right_overhang()`. The renderers widen clear rects and sprite allocations by it
   so overhanging ink is neither cut off nor left behind.
@@ -15,7 +18,7 @@
 
 **Breaking**
 
-- `create_bytes` takes new `GlyphStyle` and `recolour` parameters.
+- `create_bytes` takes new `bold` and `recolour` parameters.
 - `AgbFont` has a new required method `right_overhang()`; external implementors must add it.
 
 # v0.25.1

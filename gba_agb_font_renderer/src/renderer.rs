@@ -125,7 +125,7 @@ impl TextRenderer {
             last_cx = cursor_x;
         }
 
-        // Styled (italic/bold) ink may overhang the measured width, so an active
+        // Styled (bold) ink may overhang the measured width, so an active
         // clear widens to cover it; (0, 0) stays a true no-op
         let clear_w = format.clear.0 as i32;
         let clear_size = if clear_w > 0 {
@@ -139,6 +139,12 @@ impl TextRenderer {
         clear_rect_in_tiles(&mut self.tiles, pos, clear_size);
 
         for (tx, ty, data) in &staged {
+            // Cells are staged over their full footprint, so narrow glyphs leave
+            // all-zero tiles; skipping them keeps blank VRAM tiles unallocated
+            // (safe: clears only ever touch tracked tiles)
+            if data.iter().all(|&row| row == 0) {
+                continue;
+            }
             let idx = self.ensure_tile_idx(*tx, *ty, background, self.palette_id);
             let tile_data = self.tiles[idx].2.data_mut();
             for (dst, &src) in tile_data.iter_mut().zip(data.iter()) {
@@ -243,6 +249,10 @@ impl TextRenderer {
         clear_rect_in_tiles(&mut self.tiles, pos, clear_size);
 
         for (tx, ty, data) in &staged {
+            // Same blank-tile skip as draw_text
+            if data.iter().all(|&row| row == 0) {
+                continue;
+            }
             let idx = self.ensure_tile_idx(*tx, *ty, background, palette_id);
             let tile_data = self.tiles[idx].2.data_mut();
             for (dst, &src) in tile_data.iter_mut().zip(data.iter()) {
@@ -384,8 +394,7 @@ mod tests {
 
     include_agb_font!(
         STYLED,
-        "../examples/font_simple_idx0.aseprite",
-        italic,
+        "../examples/simple_8x8_text15_shadow14.aseprite",
         bold
     );
 
@@ -415,10 +424,10 @@ mod tests {
 
     #[test_case]
     fn clear_covers_styled_overhang(_gba: &mut agb::Gba) {
-        assert_eq!(STYLED.right_overhang(), 3, "bare italic + bold is 2*1 + 1");
+        assert_eq!(STYLED.right_overhang(), 1, "bare bold stores overhang 1");
 
-        // The apostrophe inks only in the top band, so the styled sheet must have
-        // ink past its roman advance
+        // Bold smears ink past the rightmost roman column, so the styled sheet
+        // must have ink past its roman advance
         let ink_w = rightmost_ink(&STYLED, b'\'').unwrap() + 1;
         let roman_w = STYLED.char_width(b'\'') as usize;
         assert!(

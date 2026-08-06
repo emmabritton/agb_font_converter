@@ -251,7 +251,7 @@ impl TypewriterRenderer {
             TextAlign::Left => w,
             TextAlign::Center(cw) | TextAlign::Right(cw) => w.max(cw as i32),
         };
-        // Styled (italic/bold) ink may overhang the measured width on every arm,
+        // Styled (bold) ink may overhang the measured width on every arm,
         // including past a Wrap/Cutoff column's last glyph
         let w = w + font.right_overhang() as i32;
         self.renderer.clear_pixel_rect(self.start, w, h);

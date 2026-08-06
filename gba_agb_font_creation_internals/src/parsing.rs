@@ -79,21 +79,14 @@ pub fn extract_glyph_data(
     data
 }
 
-/// Applies the naive italic shear and bold smear to packed glyph data in place.
+/// Applies the naive bold smear to packed glyph data in place.
 ///
-/// Rows `[0, h/3)` shift right by `2 * italic` px and rows `[h/3, 2*(h/3))` by `italic` px;
-/// the remaining rows (the bottom band absorbs any remainder) stay put. Each output pixel
-/// then becomes the max palette index over itself and its `bold` left neighbours. Ink pushed
-/// past `cell_width` is clipped.
-pub fn apply_style(
-    data: &mut [u32],
-    cell_width: u8,
-    cell_height: u8,
-    glyph_count: usize,
-    italic: u8,
-    bold: u8,
-) {
-    if italic == 0 && bold == 0 {
+/// Each output pixel becomes the max palette index over itself and its `bold` left
+/// neighbours, so ink extends `bold` px rightwards. Ink pushed past `cell_width` is
+/// clipped; `create_bytes` widens the packed cell by `bold` first (see [`widen_cells`]),
+/// so end-to-end nothing is lost.
+pub fn apply_bold(data: &mut [u32], cell_width: u8, cell_height: u8, glyph_count: usize, bold: u8) {
+    if bold == 0 {
         return;
     }
 
@@ -101,19 +94,10 @@ pub fn apply_style(
     let cell_height = cell_height as usize;
     let row_u32s = (cell_width + 7) >> 3;
     let glyph_size = row_u32s * cell_height;
-    let third = cell_height / 3;
 
     let mut src = vec![0u8; cell_width];
     for glyph_idx in 0..glyph_count {
         for row in 0..cell_height {
-            let shift = if row < third {
-                2 * italic as usize
-            } else if row < 2 * third {
-                italic as usize
-            } else {
-                0
-            };
-
             let row_base = glyph_idx * glyph_size + row * row_u32s;
             for (x, px) in src.iter_mut().enumerate() {
                 *px = ((data[row_base + (x >> 3)] >> ((x & 7) * 4)) & 0xF) as u8;
@@ -121,11 +105,11 @@ pub fn apply_style(
 
             data[row_base..row_base + row_u32s].fill(0);
             for x in 0..cell_width {
-                // Max over the shifted pixel and its smeared left neighbours, never a
+                // Max over the pixel and its smeared left neighbours, never a
                 // bitwise OR: OR-ing two luma indices fabricates brighter values
                 let mut idx = 0u8;
                 for smear in 0..=bold as usize {
-                    if let Some(sx) = x.checked_sub(shift + smear) {
+                    if let Some(sx) = x.checked_sub(smear) {
                         idx = idx.max(src[sx]);
                     }
                 }
@@ -135,6 +119,35 @@ pub fn apply_style(
             }
         }
     }
+}
+
+/// Repacks glyph data from `old_width`-px cells into `new_width`-px cells, the new
+/// columns transparent. The rightmost inked column can only sit at `old_width - 1`, so
+/// widening by the bold strength before [`apply_bold`] guarantees the smeared ink
+/// always fits, no matter how the sheet is drawn
+pub fn widen_cells(
+    data: Vec<u32>,
+    old_width: u8,
+    new_width: u8,
+    cell_height: u8,
+    glyph_count: usize,
+) -> Vec<u32> {
+    debug_assert!(new_width >= old_width);
+    let old_row_u32s = (old_width as usize + 7) >> 3;
+    let new_row_u32s = (new_width as usize + 7) >> 3;
+    if new_row_u32s == old_row_u32s {
+        // The extra pixels live in the high nibbles of the existing words, which
+        // extract_glyph_data already left zero
+        return data;
+    }
+
+    let rows = cell_height as usize * glyph_count;
+    let mut out = vec![0u32; new_row_u32s * rows];
+    for row in 0..rows {
+        out[row * new_row_u32s..row * new_row_u32s + old_row_u32s]
+            .copy_from_slice(&data[row * old_row_u32s..(row + 1) * old_row_u32s]);
+    }
+    out
 }
 
 /// Remaps every pixel's palette index through `table` (index N becomes `table[N]`)
@@ -155,7 +168,7 @@ pub fn apply_recolour(data: &mut [u32], table: &[u8; 16]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_recolour, apply_style};
+    use super::{apply_bold, apply_recolour, widen_cells};
 
     fn buf(cell_width: usize, cell_height: usize) -> Vec<u32> {
         vec![0u32; ((cell_width + 7) >> 3) * cell_height]
@@ -172,48 +185,20 @@ mod tests {
     }
 
     #[test]
-    fn zero_style_is_a_no_op() {
+    fn zero_bold_is_a_no_op() {
         let mut data = buf(8, 6);
         set_px(&mut data, 8, 3, 1, 0x7);
         let before = data.clone();
-        apply_style(&mut data, 8, 6, 1, 0, 0);
+        apply_bold(&mut data, 8, 6, 1, 0);
         assert_eq!(data, before);
-    }
-
-    #[test]
-    fn bands_shift_top_double_mid_single_bottom_absorbs_remainder() {
-        for h in [6usize, 7, 8] {
-            let third = h / 3;
-            let mut data = buf(8, h);
-            for y in 0..h {
-                set_px(&mut data, 8, 0, y, 0xF);
-            }
-            apply_style(&mut data, 8, h as u8, 1, 1, 0);
-            for y in 0..h {
-                let expected_x = if y < third {
-                    2
-                } else if y < 2 * third {
-                    1
-                } else {
-                    // h=8 pins the remainder rule: row 4 belongs to the bottom band
-                    // (2*third = 4), not the middle one (2*h/3 would be 5)
-                    0
-                };
-                for x in 0..8 {
-                    let expected = if x == expected_x { 0xF } else { 0 };
-                    assert_eq!(get_px(&data, 8, x, y), expected, "h={h} y={y} x={x}");
-                }
-            }
-        }
     }
 
     #[test]
     fn bold_takes_max_not_or() {
         let mut data = buf(8, 3);
-        // Bottom band (h=3 -> row 2) so the italic shift stays out of the way
         set_px(&mut data, 8, 2, 2, 0x9);
         set_px(&mut data, 8, 3, 2, 0x6);
-        apply_style(&mut data, 8, 3, 1, 0, 1);
+        apply_bold(&mut data, 8, 3, 1, 1);
         assert_eq!(get_px(&data, 8, 2, 2), 0x9);
         assert_eq!(get_px(&data, 8, 3, 2), 0x9, "an OR would fabricate 0xF");
         assert_eq!(get_px(&data, 8, 4, 2), 0x6);
@@ -221,22 +206,54 @@ mod tests {
     }
 
     #[test]
-    fn ink_pushed_past_the_cell_edge_clips() {
-        let mut data = buf(8, 6);
+    fn smear_pushed_past_the_cell_edge_clips() {
+        let mut data = buf(8, 2);
         set_px(&mut data, 8, 7, 0, 0xF);
-        apply_style(&mut data, 8, 6, 1, 1, 0);
-        for x in 0..8 {
-            assert_eq!(get_px(&data, 8, x, 0), 0, "x={x}");
-        }
+        apply_bold(&mut data, 8, 2, 1, 2);
+        assert_eq!(get_px(&data, 8, 7, 0), 0xF);
+        // The smear past the edge must vanish, not wrap into the next row
+        assert_eq!(get_px(&data, 8, 0, 1), 0);
+        assert_eq!(get_px(&data, 8, 1, 1), 0);
     }
 
     #[test]
-    fn shift_crosses_a_u32_boundary() {
-        let mut data = buf(16, 6);
+    fn widen_within_the_same_word_reuses_the_buffer() {
+        let mut data = buf(8, 2);
+        set_px(&mut data, 8, 7, 1, 0xF);
+        let widened = widen_cells(data.clone(), 8, 8, 2, 1);
+        assert_eq!(widened, data);
+    }
+
+    #[test]
+    fn widen_across_a_word_boundary_repacks_rows() {
+        // Two 8x3 glyphs into 10x3 cells: row_u32s goes 1 -> 2
+        let mut data = buf(8, 6);
+        set_px(&mut data, 8, 7, 0, 0xA);
+        set_px(&mut data, 8, 0, 5, 0xB);
+        let widened = widen_cells(data, 8, 10, 3, 2);
+        assert_eq!(widened.len(), 12);
+        assert_eq!(get_px(&widened, 10, 7, 0), 0xA);
+        assert_eq!(get_px(&widened, 10, 0, 5), 0xB);
+        for x in 8..10 {
+            for y in 0..6 {
+                assert_eq!(get_px(&widened, 10, x, y), 0, "new columns must be blank");
+            }
+        }
+        // The widened cell now has room for the smear that clipped before
+        let mut widened = widened;
+        apply_bold(&mut widened, 10, 3, 2, 2);
+        assert_eq!(get_px(&widened, 10, 9, 0), 0xA);
+    }
+
+    #[test]
+    fn smear_crosses_a_u32_boundary() {
+        let mut data = buf(16, 1);
         set_px(&mut data, 16, 7, 0, 0xA);
-        apply_style(&mut data, 16, 6, 1, 4, 0);
-        assert_eq!(get_px(&data, 16, 15, 0), 0xA);
-        assert_eq!(get_px(&data, 16, 7, 0), 0);
+        apply_bold(&mut data, 16, 1, 1, 2);
+        assert_eq!(get_px(&data, 16, 7, 0), 0xA);
+        assert_eq!(get_px(&data, 16, 8, 0), 0xA);
+        assert_eq!(get_px(&data, 16, 9, 0), 0xA);
+        assert_eq!(get_px(&data, 16, 10, 0), 0);
     }
 
     fn identity_table() -> [u8; 16] {
@@ -282,8 +299,10 @@ mod tests {
         let mut data = buf(8, 6);
         data.extend_from_slice(&buf(8, 6));
         set_px(&mut data[6..], 8, 0, 0, 0xF);
-        apply_style(&mut data, 8, 6, 2, 1, 0);
+        apply_bold(&mut data, 8, 6, 2, 1);
         assert!(data[..6].iter().all(|&w| w == 0), "glyph 0 stays empty");
-        assert_eq!(get_px(&data[6..], 8, 2, 0), 0xF);
+        assert_eq!(get_px(&data[6..], 8, 0, 0), 0xF);
+        assert_eq!(get_px(&data[6..], 8, 1, 0), 0xF);
+        assert_eq!(get_px(&data[6..], 8, 2, 0), 0);
     }
 }

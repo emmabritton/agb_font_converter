@@ -197,7 +197,7 @@ pub trait AgbFont {
     /// Height of every glyph in pixels
     fn glyph_height(&self) -> u32;
 
-    /// Max pixels a styled (italic/bold) glyph's ink may extend past its roman
+    /// Max pixels a styled (bold) glyph's ink may extend past its roman
     /// advance width; 0 for unstyled fonts
     ///
     /// Renderers add this to any bounding box derived from measured text, clear

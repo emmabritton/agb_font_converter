@@ -11,5 +11,5 @@ publish = false
 # Deliberately depends on the renderer alone: this is the end-to-end check that its
 # re-exports give a consumer both `include_agb_font!` and the font types.
 [dependencies]
-agb = "0.25.0"
-gba_agb_font_renderer = { version = "0.25.1", path = "../gba_agb_font_renderer" }
+agb = "0.25"
+gba_agb_font_renderer = { version = "0.25", path = "../gba_agb_font_renderer" }
