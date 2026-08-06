@@ -197,6 +197,14 @@ pub trait AgbFont {
     /// Height of every glyph in pixels
     fn glyph_height(&self) -> u32;
 
+    /// Max pixels a styled (italic/bold) glyph's ink may extend past its roman
+    /// advance width; 0 for unstyled fonts
+    ///
+    /// Renderers add this to any bounding box derived from measured text, clear
+    /// rectangles and sprite widths, so the overhanging ink is neither cut off nor
+    /// left behind. The measuring APIs themselves stay roman
+    fn right_overhang(&self) -> u8;
+
     /// Number of `u32`s per glyph
     fn glyph_size(&self) -> usize;
 
@@ -391,6 +399,11 @@ macro_rules! impl_agb_font {
             }
 
             #[inline]
+            fn right_overhang(&self) -> u8 {
+                self.right_overhang
+            }
+
+            #[inline]
             fn glyph_size(&self) -> usize {
                 self.glyph_size
             }
@@ -405,3 +418,62 @@ macro_rules! impl_agb_font {
 
 impl_agb_font!(PrintableFont, 32);
 impl_agb_font!(FullFont, 0);
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    /// Minimal valid small-font blob: 4x1 cells, so one u32 of pixel data per glyph
+    const fn printable_blob(right_overhang: u8) -> [u8; 100 + 95 * 4] {
+        let mut bytes = [0u8; 100 + 95 * 4];
+        bytes[0] = 0;
+        bytes[1] = 4;
+        bytes[2] = 1;
+        let mut i = 0;
+        while i < 95 {
+            bytes[3 + i] = 2;
+            i += 1;
+        }
+        bytes[98] = right_overhang;
+        bytes
+    }
+
+    /// Minimal valid full-font blob: 4x1 cells
+    const fn full_blob(right_overhang: u8) -> [u8; 260 + 256 * 4] {
+        let mut bytes = [0u8; 260 + 256 * 4];
+        bytes[0] = 1;
+        bytes[1] = 4;
+        bytes[2] = 1;
+        let mut i = 0;
+        while i < 256 {
+            bytes[3 + i] = 2;
+            i += 1;
+        }
+        bytes[259] = right_overhang;
+        bytes
+    }
+
+    const STYLED_PRINTABLE: [u8; 480] = printable_blob(5);
+    const ROMAN_PRINTABLE: [u8; 480] = printable_blob(0);
+    const STYLED_FULL: [u8; 1284] = full_blob(7);
+
+    #[test]
+    fn printable_font_reads_the_overhang_byte() {
+        static FONT: PrintableFont = printable_font!(&STYLED_PRINTABLE);
+        assert_eq!(FONT.right_overhang(), 5);
+        assert_eq!(FONT.char_width(b'A'), 2, "overhang must not affect widths");
+    }
+
+    #[test]
+    fn zero_padding_parses_as_no_overhang() {
+        static FONT: PrintableFont = printable_font!(&ROMAN_PRINTABLE);
+        assert_eq!(FONT.right_overhang(), 0);
+    }
+
+    #[test]
+    fn full_font_reads_the_overhang_byte() {
+        static FONT: FullFont = full_font!(&STYLED_FULL);
+        assert_eq!(FONT.right_overhang(), 7);
+        assert_eq!(FONT.char_width(0xE9), 2);
+    }
+}

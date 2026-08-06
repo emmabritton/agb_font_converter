@@ -37,6 +37,13 @@ pub mod prelude {
 pub struct TextFormat {
     pub overflow: TextOverflow,
     pub align: TextAlign,
+    /// Width and height in pixels of a rectangle cleared at the draw position
+    /// before drawing; `(0, 0)` disables it
+    ///
+    /// Sized from roman measures (`size_of`, previous `draw_text` returns); with a
+    /// styled (italic/bold) font the renderer widens the clear by the font's
+    /// [`right_overhang`](gba_agb_font_eb::AgbFont::right_overhang) so overhanging
+    /// ink is erased too
     pub clear: (u16, u16),
 }
 

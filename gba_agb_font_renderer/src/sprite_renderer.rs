@@ -107,6 +107,9 @@ impl SpriteTextRenderer {
         let mut longest: i32 = 0;
         let mut last_cx = pos.x;
         let spacing = self.letter_spacing;
+        // Styled (italic/bold) ink may extend past the last glyph's advance, so
+        // sprite packing keeps that many columns free for it
+        let overhang = font.right_overhang() as i32;
 
         for (line, line_w) in font.lines(text, wrap_px, word_wrap, spacing) {
             if !first_line {
@@ -147,7 +150,7 @@ impl SpriteTextRenderer {
                     sprite_content_w + gap
                 };
 
-                if offset + cw > max_sprite_w as i32 {
+                if offset + cw + overhang > max_sprite_w as i32 {
                     if !sprite_chars.is_empty() {
                         self.flush_sprite(
                             &sprite_chars,
@@ -200,7 +203,12 @@ impl SpriteTextRenderer {
         sprite_h: u32,
         valid_widths: &[u32],
     ) {
-        let sprite_w = pick_min_width(content_w.max(1), valid_widths);
+        // The last glyph's styled ink may overhang its advance; reserve room so
+        // the sprite's own width doesn't truncate it
+        let sprite_w = pick_min_width(
+            (content_w + font.right_overhang() as u32).max(1),
+            valid_widths,
+        );
         let size = Size::from_width_height(sprite_w as usize, sprite_h as usize);
         let mut dyn_sprite = DynamicSprite16::new(size);
         let w_tiles = (sprite_w >> 3) as usize;

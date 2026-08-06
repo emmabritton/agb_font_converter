@@ -16,6 +16,9 @@ struct Args {
     grid: Option<(u32, u32)>,
     monospace: Option<Option<u8>>,
     width_overrides: Vec<(u8, u8)>,
+    italic: u8,
+    bold: u8,
+    recolour: Vec<(u8, u8)>,
     debug: bool,
 }
 
@@ -35,6 +38,9 @@ impl Parse for Args {
         let mut grid = None;
         let mut monospace = None;
         let mut width_overrides = Vec::new();
+        let mut italic = 0u8;
+        let mut bold = 0u8;
+        let mut recolour = Vec::new();
         let mut debug = false;
 
         while input.peek(Token![,]) {
@@ -116,6 +122,58 @@ impl Parse for Args {
                         }
                     }
                 }
+                "recolour" => {
+                    input.parse::<Token![=]>()?;
+                    let content;
+                    braced!(content in input);
+                    while !content.is_empty() {
+                        let from_lit: LitInt = content.parse()?;
+                        let from = from_lit.base10_parse::<u8>()?;
+                        if from == 0 {
+                            return Err(syn::Error::new(
+                                from_lit.span(),
+                                "band 0 is the transparent background and cannot be recoloured",
+                            ));
+                        }
+                        if from > 15 {
+                            return Err(syn::Error::new(
+                                from_lit.span(),
+                                "recolour bands are 0-15 (luma >> 4)",
+                            ));
+                        }
+                        content.parse::<Token![=]>()?;
+                        let to_lit: LitInt = content.parse()?;
+                        let to = to_lit.base10_parse::<u8>()?;
+                        if to > 15 {
+                            return Err(syn::Error::new(
+                                to_lit.span(),
+                                "recolour bands are 0-15 (luma >> 4)",
+                            ));
+                        }
+                        recolour.push((from, to));
+                        if content.peek(Token![,]) {
+                            content.parse::<Token![,]>()?;
+                        }
+                    }
+                }
+                "italic" => {
+                    italic = if input.peek(Token![=]) {
+                        input.parse::<Token![=]>()?;
+                        let v: LitInt = input.parse()?;
+                        v.base10_parse::<u8>()?
+                    } else {
+                        1
+                    };
+                }
+                "bold" => {
+                    bold = if input.peek(Token![=]) {
+                        input.parse::<Token![=]>()?;
+                        let v: LitInt = input.parse()?;
+                        v.base10_parse::<u8>()?
+                    } else {
+                        1
+                    };
+                }
                 "debug" => {
                     debug = true;
                 }
@@ -124,7 +182,7 @@ impl Parse for Args {
                         ident.span(),
                         format!(
                             "unknown argument `{other}`; expected `full`, `size`, `monospace`, \
-                             `widths` or `debug`"
+                             `widths`, `italic`, `bold`, `recolour` or `debug`"
                         ),
                     ));
                 }
@@ -142,6 +200,9 @@ impl Parse for Args {
             grid,
             monospace,
             width_overrides,
+            italic,
+            bold,
+            recolour,
             debug,
         })
     }
@@ -210,6 +271,21 @@ fn print_debug(args: &Args, path: &std::path::Path, bytes: &[u8], glyph_count: u
     if !args.width_overrides.is_empty() {
         notes.push(format!("{} width override(s)", args.width_overrides.len()));
     }
+    if args.italic != 0 {
+        notes.push(format!("italic = {}", args.italic));
+    }
+    if args.bold != 0 {
+        notes.push(format!("bold = {}", args.bold));
+    }
+    if args.italic != 0 || args.bold != 0 {
+        notes.push(format!(
+            "right overhang {}px",
+            2 * args.italic as u32 + args.bold as u32
+        ));
+    }
+    if !args.recolour.is_empty() {
+        notes.push(format!("recolour {} band(s)", args.recolour.len()));
+    }
     let notes = if notes.is_empty() {
         String::new()
     } else {
@@ -258,6 +334,9 @@ fn print_debug(args: &Args, path: &std::path::Path, bytes: &[u8], glyph_count: u
 /// include_agb_font!(pub FONT, "font.png", full, monospace = 8);
 /// include_agb_font!(pub FONT, "font.png", widths = { 'A' = 5, ' ' = 3, 65 = 4 });
 /// include_agb_font!(pub FONT, "font.png", monospace = 8, widths = { 'A' = 5 });
+/// include_agb_font!(pub FONT, "font.png", italic, bold);
+/// include_agb_font!(pub FONT, "font.png", italic = 2, bold = 2);
+/// include_agb_font!(pub FONT, "font.png", recolour = { 15 = 14, 14 = 15 });
 /// include_agb_font!(pub FONT, "font.png", debug);
 /// ```
 ///
@@ -295,6 +374,35 @@ fn print_debug(args: &Args, path: &std::path::Path, bytes: &[u8], glyph_count: u
 /// only makes the glyph narrower. Vertically, every row of the cell is kept as drawn with no
 /// trimming or baseline detection, which is how ascenders and descenders are expressed.
 ///
+/// # Italic and bold
+///
+/// `italic` and `bold` style the glyphs at pack time; bare they mean strength 1, an integer
+/// sets the strength (`= 0` is off, same as omitting them). `italic = N` shears the glyph
+/// right: the middle third of its rows moves `N`px, the top third `2*N`px, the bottom third
+/// stays. `bold = N` smears each pixel over its `N` left neighbours (taking the brightest).
+///
+/// **Advance widths stay roman**: they are measured before styling, so the slanted or
+/// thickened ink overhangs into the following letter like natural italic kerning, and text
+/// metrics match the unstyled sheet exactly. The maximum overhang, `2*italic + bold` pixels,
+/// is stored in the font; the renderers read it back to widen clear rectangles and sprite
+/// allocations so the extra ink is never cut off or left behind. Measuring APIs are not
+/// widened, so with `Center`/`Right` alignment or wrapping the last glyph on a line may ink
+/// up to that many pixels past the measured edge.
+///
+/// Ink pushed past the right edge of the cell is clipped: a sheet needs `2*italic + bold`
+/// columns of right padding per cell to style losslessly, and `2*italic + bold` must be
+/// smaller than the cell width (a compile error otherwise).
+///
+/// # Recolour
+///
+/// `recolour = { from = to, … }` remaps the sheet's grey bands at pack time. A band is a
+/// palette index 0–15, i.e. the luminance range `from*16 ..= from*16 + 15` (`luma >> 4`).
+/// The map is applied simultaneously, so `{ 15 = 14, 14 = 15 }` swaps two bands rather
+/// than chaining; unmapped bands pass through. Band 0 is the transparent background and
+/// cannot be recoloured (a compile error); remapping *to* 0 makes those pixels transparent
+/// without changing advance widths, which are always scanned from the sheet as drawn.
+/// Recolour runs after `italic`/`bold`.
+///
 /// [`PrintableFont`]: ::gba_agb_font_eb::printable::PrintableFont
 /// [`FullFont`]: ::gba_agb_font_eb::full::FullFont
 #[proc_macro]
@@ -313,6 +421,11 @@ pub fn include_agb_font(input: TokenStream) -> TokenStream {
         &img,
         args.monospace,
         &args.width_overrides,
+        gba_agb_font_creation_internals::create::GlyphStyle {
+            italic: args.italic,
+            bold: args.bold,
+        },
+        &args.recolour,
     );
 
     let mode_byte = bytes[0];

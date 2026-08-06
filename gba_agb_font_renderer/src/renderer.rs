@@ -125,7 +125,17 @@ impl TextRenderer {
             last_cx = cursor_x;
         }
 
-        let clear_size = (format.clear.0 as i32, format.clear.1 as i32);
+        // Styled (italic/bold) ink may overhang the measured width, so an active
+        // clear widens to cover it; (0, 0) stays a true no-op
+        let clear_w = format.clear.0 as i32;
+        let clear_size = if clear_w > 0 {
+            (
+                clear_w + font.right_overhang() as i32,
+                format.clear.1 as i32,
+            )
+        } else {
+            (clear_w, format.clear.1 as i32)
+        };
         clear_rect_in_tiles(&mut self.tiles, pos, clear_size);
 
         for (tx, ty, data) in &staged {
@@ -223,6 +233,13 @@ impl TextRenderer {
         }
         longest = longest.max(line_w);
 
+        // Same overhang widening as draw_text; this path also serves the
+        // typewriters' full-line redraws
+        let clear_size = if clear_size.0 > 0 {
+            (clear_size.0 + font.right_overhang() as i32, clear_size.1)
+        } else {
+            clear_size
+        };
         clear_rect_in_tiles(&mut self.tiles, pos, clear_size);
 
         for (tx, ty, data) in &staged {
@@ -355,6 +372,83 @@ impl TextRenderer {
     /// Number of VRAM tiles currently allocated by this renderer
     pub fn tile_count(&self) -> usize {
         self.tiles.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::include_agb_font;
+    use agb::display::Priority;
+    use agb::display::tiled::{RegularBackgroundSize, TileFormat};
+
+    include_agb_font!(
+        STYLED,
+        "../examples/font_simple_idx0.aseprite",
+        italic,
+        bold
+    );
+
+    /// Rightmost inked pixel column of `c`'s glyph, or `None` for an empty glyph
+    fn rightmost_ink<T: AgbFont>(font: &T, c: u8) -> Option<usize> {
+        let row_u32s = font.row_u32s();
+        let mut rightmost = None;
+        for (i, &word) in font.glyph(c).iter().enumerate() {
+            for px in 0..8usize {
+                if (word >> (px * 4)) & 0xF != 0 {
+                    let x = (i % row_u32s) * 8 + px;
+                    if rightmost.is_none_or(|m| x > m) {
+                        rightmost = Some(x);
+                    }
+                }
+            }
+        }
+        rightmost
+    }
+
+    fn any_ink(renderer: &mut TextRenderer) -> bool {
+        renderer
+            .tiles
+            .iter_mut()
+            .any(|(_, _, tile)| tile.data_mut().iter().any(|&row| row != 0))
+    }
+
+    #[test_case]
+    fn clear_covers_styled_overhang(_gba: &mut agb::Gba) {
+        assert_eq!(STYLED.right_overhang(), 3, "bare italic + bold is 2*1 + 1");
+
+        // The apostrophe inks only in the top band, so the styled sheet must have
+        // ink past its roman advance
+        let ink_w = rightmost_ink(&STYLED, b'\'').unwrap() + 1;
+        let roman_w = STYLED.char_width(b'\'') as usize;
+        assert!(
+            ink_w > roman_w,
+            "expected styled ink past the roman advance ({ink_w} <= {roman_w})"
+        );
+
+        let mut bg = RegularBackground::new(
+            Priority::P3,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        );
+        let mut renderer = TextRenderer::default();
+        let (w, h) = STYLED.size_of(b"'", None, renderer.letter_spacing, renderer.line_spacing);
+
+        renderer.draw_text(b"'", &STYLED, &mut bg, vec2(0, 0), &TextFormat::default());
+        assert!(any_ink(&mut renderer), "glyph should have drawn pixels");
+
+        // A clear sized from the roman measure must still erase the overhang
+        renderer.draw_text(
+            b"",
+            &STYLED,
+            &mut bg,
+            vec2(0, 0),
+            &TextFormat::default().with_clear(w as u16, h as u16),
+        );
+        assert!(
+            !any_ink(&mut renderer),
+            "roman-sized clear left styled overhang ink behind"
+        );
     }
 }
 

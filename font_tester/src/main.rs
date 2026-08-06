@@ -42,6 +42,17 @@ include_agb_font!(
     monospace
 );
 include_agb_font!(MONO_1_MONO, "../examples/mono_3x5_idx1.aseprite", monospace);
+include_agb_font!(
+    SIMPLE_STYLED,
+    "../examples/font_simple_idx0.aseprite",
+    italic,
+    bold
+);
+include_agb_font!(
+    SIMPLE_RECOLOURED,
+    "../examples/font_simple_idx0.aseprite",
+    recolour = { 15 = 13 }
+);
 
 static UI_FONT: &PrintableFont = &SIMPLE;
 
@@ -71,6 +82,14 @@ static FONTS: &[(&[u8], SlotFont)] = &[
     (
         b"mono_3x5_idx1 (monospace)",
         SlotFont::Printable(&MONO_1_MONO),
+    ),
+    (
+        b"font_simple_idx0 (italic bold)",
+        SlotFont::Printable(&SIMPLE_STYLED),
+    ),
+    (
+        b"font_simple_idx0 (recolour 15=13)",
+        SlotFont::Printable(&SIMPLE_RECOLOURED),
     ),
 ];
 
@@ -141,6 +160,31 @@ fn log_metrics() {
             "{name}: -1 line spacing collapsed below 1px/line"
         );
     }
+
+    // Styling must not touch metrics: advances stay roman, only the stored
+    // overhang differs
+    assert_eq!(
+        SIMPLE.char_widths, SIMPLE_STYLED.char_widths,
+        "styled font changed roman advances"
+    );
+    assert_eq!(
+        SIMPLE_STYLED.right_overhang(),
+        3,
+        "bare italic + bold should store overhang 2*1 + 1"
+    );
+    assert_eq!(SIMPLE.right_overhang(), 0, "roman font gained an overhang");
+
+    // Recolour must not touch metrics or overhang, only pixel data
+    assert_eq!(
+        SIMPLE.char_widths, SIMPLE_RECOLOURED.char_widths,
+        "recoloured font changed advances"
+    );
+    assert_eq!(
+        SIMPLE_RECOLOURED.right_overhang(),
+        0,
+        "recolour should not store an overhang"
+    );
+
     agb::println!("font_tester: metrics ok");
 }
 

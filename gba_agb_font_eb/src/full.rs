@@ -1,5 +1,5 @@
 pub const GLYPH_COUNT_FULL: usize = 256;
-/// Binary layout: 1 mode + 1 glyph_width + 1 glyph_height + 256 char_widths + 1 padding = 260 bytes
+/// Binary layout: 1 mode + 1 glyph_width + 1 glyph_height + 256 char_widths + 1 right_overhang = 260 bytes
 pub const HEADER_FULL: usize = 256 + 1 + 1 + 1 + 1;
 
 /// 4bpp font for gba covering all 256 Latin-1 code points.
@@ -11,6 +11,7 @@ pub struct FullFont {
     pub glyph_height: u32,
     pub glyph_size: usize,
     pub row_u32s: usize,
+    pub right_overhang: u8,
 }
 
 /// Construct a static [`FullFont`] from a byte array literal, with optional `iwram` or `ewram` placement
@@ -69,6 +70,9 @@ impl FullFont {
             i += 1;
         }
 
+        // Old fonts emitted a zero padding byte here, so they parse as overhang 0
+        let right_overhang = bytes[HEADER_FULL - 1];
+
         let glyph_size = row_u32s * glyph_height as usize;
         let data_len = bytes.len() - HEADER_FULL;
         assert!(
@@ -84,6 +88,7 @@ impl FullFont {
             row_u32s,
             char_widths,
             data,
+            right_overhang,
         }
     }
 }

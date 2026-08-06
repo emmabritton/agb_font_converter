@@ -75,6 +75,14 @@ impl AgbFont for SlotFont {
             Self::Full(f) => f.row_u32s(),
         }
     }
+
+    #[inline]
+    fn right_overhang(&self) -> u8 {
+        match self {
+            Self::Printable(f) => f.right_overhang(),
+            Self::Full(f) => f.right_overhang(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -422,6 +430,8 @@ impl MultiTypewriterRenderer {
             TextAlign::Left => w,
             TextAlign::Center(cw) | TextAlign::Right(cw) => w.max(cw as i32),
         };
+        // Styled (italic/bold) ink may overhang the measured width
+        let w = w + slot.font.right_overhang() as i32;
         renderer.clear_pixel_rect(slot.start, w, h);
     }
 
