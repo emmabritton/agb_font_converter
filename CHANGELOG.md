@@ -1,25 +1,6 @@
 # Unreleased
 
-- Add a `bold` argument to `include_agb_font!` (bare = strength 1, or `= N`), a pack-time
-  transform smearing each pixel over its `N` left neighbours. Advance widths stay roman, so
-  the thickened ink overhangs the next letter like natural kerning. The packed cell is
-  widened by `bold` pixels at pack time, so glyphs drawn flush against the right edge of
-  their cell thicken losslessly with no sheet padding. (An `italic` shear was tried and
-  removed: splitting rows into thirds by cell height slants glyphs that don't fill the
-  cell wrongly.)
-- Store the max styled overhang (`bold`) in the previously unused header padding
-  byte (offset 259 full / 98 small; old fonts read as 0) and expose it as
-  `AgbFont::right_overhang()`. The renderers widen clear rects and sprite allocations by it
-  so overhanging ink is neither cut off nor left behind.
-- Add `recolor = { from = to, ... }` argument to `include_agb_font!`: a pack-time remap of
-  the sheet's grey bands (band = `luma >> 4`), applied simultaneously so swaps don't chain.
-  Band 0 (the transparent background) cannot be recoloured; remapping to 0 makes pixels
-  transparent without changing advances.
-
-**Breaking**
-
-- `create_bytes` takes new `bold` and `recolor` parameters.
-- `AgbFont` has a new required method `right_overhang()`; external implementors must add it.
+- Add `bold [= N]` and `recolor { from = to*}` to `include_agb_font!()`
 
 # v0.25.1
 
