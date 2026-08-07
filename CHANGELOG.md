@@ -1,4 +1,4 @@
-# Unreleased
+# v0.25.2
 
 - Add `bold [= N]` and `recolor { from = to*}` to `include_agb_font!()`
 
