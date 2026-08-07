@@ -14,6 +14,9 @@ The consequence is that `--workspace` doesn't work from the root, it would try t
 agb-dependent crates for the host. Name the host crates instead:
 
 ```sh
+cargo clippy -p gba_agb_font_eb -p gba_agb_font_loader -p gba_agb_font_creation_internals --all-targets
+cargo test -p gba_agb_font_eb -p gba_agb_font_creation_internals
+
 cd gba_agb_font_renderer && cargo build            # renderer (nightly, GBA target)
 cd font_tester && cargo run                        # test ROM in an emulator
 ```
@@ -57,7 +60,7 @@ Refers to which gray index is assigned to what part of the typeface, see [Image 
 
 #### Kind
 
-- `Printable` All printable ASCII `!` to `~`
+- `Printable` All printable ASCII, space to `~`
 - `Limited` Less than printable, typically upper case, numbers and symbols with no lower case
 
 #### Monospace
@@ -231,7 +234,7 @@ size is wrong and glyphs are being sampled off-centre.
  
 ## Font modes
 
-The mode is auto-detected from image dimensions (`(image_height / cell_height) * 16`):
+The mode is auto-detected from the sheet grid: 256 or more cells (`cols * rows`) makes a full font, fewer makes a small font.
 
 ### Full, 256 glyphs
 
@@ -244,16 +247,6 @@ See `examples/full_font.aseprite`.
 Image is a 16x6 grid of cells covering ASCII 32–126 (space through `~`), in code-point order.
 
 See `examples/plain_8x8_text15.aseprite`.
-
-| Cell indices | Characters |
-|--------------|------------|
-| 0            | space (32) |
-| 1–15         | `!` – `/`  |
-| 16–25        | `0`–`9`    |
-| 26–41        | `:` – `Z`  |
-| 42–68        | `[` – `z`  |
-| 69–94        | `{` – `~`  |
-
 
 ## Image format
 

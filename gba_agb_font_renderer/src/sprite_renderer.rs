@@ -9,6 +9,12 @@ use gba_agb_font_eb::AgbFont;
 /// Renders text into GBA hardware sprites (OBJ), packing multiple characters
 /// per sprite to minimise OAM slot usage.
 ///
+/// The GBA's largest sprite is 64x64: fonts taller than 64px cannot be drawn
+/// this way, and a single glyph (plus its bold overhang) wider than the widest
+/// sprite for its height (32px for glyphs up to 16px tall, 64px above that) is
+/// truncated. Both are `debug_assert`ed in
+/// [`draw_text`](SpriteTextRenderer::draw_text).
+///
 /// Call [`draw_text`](SpriteTextRenderer::draw_text) to rasterise text into
 /// [`SpriteVram`] allocations, then call [`show`](SpriteTextRenderer::show)
 /// every frame to submit the objects to the current [`GraphicsFrame`].
@@ -78,9 +84,10 @@ impl SpriteTextRenderer {
     /// replace existing text.
     ///
     /// # Returns
-    /// `(cursor_dx, cursor_dy, longest_line_px)`, the bottom right of the last
-    /// character drawn relative to `pos`, and the width of the longest line, the
-    /// same contract as [`TextRenderer::draw_text`](crate::renderer::TextRenderer::draw_text).
+    /// `(cursor_dx, cursor_dy, longest_line_px)`, the cursor position after the last
+    /// character relative to `pos` (x past the last glyph, y at the top of the last
+    /// line), and the width of the longest line, the same contract as
+    /// [`TextRenderer::draw_text`](crate::renderer::TextRenderer::draw_text).
     pub fn draw_text<T: AgbFont>(
         &mut self,
         text: &[u8],
@@ -89,6 +96,10 @@ impl SpriteTextRenderer {
         format: &TextFormat,
     ) -> (i32, i32, i32) {
         let glyph_h = font.glyph_height();
+        debug_assert!(
+            glyph_h <= 64,
+            "glyphs taller than 64px cannot fit a GBA sprite"
+        );
         let sprite_h = sprite_height_for(glyph_h);
         let valid_widths = valid_widths_for_height(sprite_h);
         let max_sprite_w = *valid_widths.last().unwrap();
@@ -205,6 +216,10 @@ impl SpriteTextRenderer {
     ) {
         // The last glyph's styled ink may overhang its advance; reserve room so
         // the sprite's own width doesn't truncate it
+        debug_assert!(
+            content_w + font.right_overhang() as u32 <= *valid_widths.last().unwrap(),
+            "glyph wider than the largest sprite for this font height; ink is truncated"
+        );
         let sprite_w = pick_min_width(
             (content_w + font.right_overhang() as u32).max(1),
             valid_widths,
@@ -277,8 +292,8 @@ fn pick_min_width(content_px: u32, valid: &[u32]) -> u32 {
 /// Blit one glyph into `data` (the raw 4bpp byte buffer from
 /// [`DynamicSprite16::data_mut`]) at horizontal pixel offset `sprite_x`
 ///
-/// Sprite data is stored as a grid of 8×8 tiles (row-major). Each tile is
-/// 32 bytes (8 rows × 4 bytes = 8 rows × 8 nibble-packed pixels)
+/// Sprite data is stored as a grid of 8x8 tiles (row-major). Each tile is
+/// 32 bytes (8 rows x 4 bytes = 8 rows x 8 nibble-packed pixels)
 ///
 /// Glyph data has the same 4bpp nibble-packed format as background tiles:
 /// pixel 0 in the lowest nibble, pixel 7 in the highest

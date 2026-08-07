@@ -55,6 +55,10 @@ fn x_offset(line_w: u32, alignment: TextAlign) -> i32 {
 
 impl TextRenderer {
     /// Clear all pixels in tracked tiles. Pass `drop_tiles: true` to deallocate them instead
+    ///
+    /// Deallocating frees the VRAM tiles while the background tilemap may still
+    /// reference them, so clear or redraw the affected background before its next
+    /// frame or the freed tiles can be reused and show garbage
     pub fn reset(&mut self, drop_tiles: bool) {
         if drop_tiles {
             self.tiles.clear();
@@ -69,7 +73,10 @@ impl TextRenderer {
     /// Render `text` at `pos` on `background` with `format` using DynamicTiles
     ///
     /// # Returns
-    /// `(cursor_dx, cursor_dy, longest_line_px)` which is the bottom right of the last character drawn, longest line contains the width of longest line (will match cursor_dx for single line)
+    /// `(cursor_dx, cursor_dy, longest_line_px)`: the cursor position after the last
+    /// character relative to `pos` (x just past the last glyph's advance, y at the *top*
+    /// of the last line, so 0 for single-line text), and the width of the longest line
+    /// (matches `cursor_dx` for a single left-aligned line)
     #[inline(always)]
     pub fn draw_text<T: AgbFont>(
         &mut self,

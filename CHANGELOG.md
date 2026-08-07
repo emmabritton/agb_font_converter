@@ -11,14 +11,14 @@
   byte (offset 259 full / 98 small; old fonts read as 0) and expose it as
   `AgbFont::right_overhang()`. The renderers widen clear rects and sprite allocations by it
   so overhanging ink is neither cut off nor left behind.
-- Add `recolour = { from = to, ... }` argument to `include_agb_font!`: a pack-time remap of
+- Add `recolor = { from = to, ... }` argument to `include_agb_font!`: a pack-time remap of
   the sheet's grey bands (band = `luma >> 4`), applied simultaneously so swaps don't chain.
   Band 0 (the transparent background) cannot be recoloured; remapping to 0 makes pixels
   transparent without changing advances.
 
 **Breaking**
 
-- `create_bytes` takes new `bold` and `recolour` parameters.
+- `create_bytes` takes new `bold` and `recolor` parameters.
 - `AgbFont` has a new required method `right_overhang()`; external implementors must add it.
 
 # v0.25.1

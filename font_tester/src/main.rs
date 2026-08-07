@@ -10,7 +10,6 @@ use agb::display::tiled::{RegularBackground, RegularBackgroundSize, TileFormat};
 use agb::display::{GraphicsFrame, Priority, Rgb, Rgb15};
 use agb::fixnum::vec2;
 use agb::input::{Button, ButtonController};
-use alloc::format;
 use alloc::string::String;
 // `include_agb_font!` is re-exported by the prelude, so the loader needs no direct
 // dependency here.
@@ -31,7 +30,11 @@ include_agb_font!(WESTERN, "../examples/western_13x14_text15.aseprite");
 include_agb_font!(SERIF_7, "../examples/serif_7x10_text15_shadow14.aseprite");
 include_agb_font!(SERIF_9, "../examples/serif_9x10_text15.aseprite");
 include_agb_font!(SERIF_11, "../examples/serif_11x10_text15.aseprite");
-include_agb_font!(GOTHIC, "../examples/gothic_16x14_text15.aseprite", widths = {'q' = 5});
+include_agb_font!(
+    GOTHIC,
+    "../examples/gothic_16x14_text15.aseprite",
+    widths = { 'q' = 5 }
+);
 include_agb_font!(PLAIN, "../examples/plain_8x8_text15.aseprite");
 include_agb_font!(SIMPLE_8, "../examples/simple_8x8_text15_shadow14.aseprite");
 include_agb_font!(SIMPLE_12, "../examples/simple_12x14_text15.aseprite");
@@ -61,11 +64,7 @@ include_agb_font!(
     "../examples/limited_blocky_3x5_text15.aseprite",
     monospace
 );
-include_agb_font!(
-    PLAIN_STYLED,
-    "../examples/plain_8x8_text15.aseprite",
-    bold
-);
+include_agb_font!(PLAIN_STYLED, "../examples/plain_8x8_text15.aseprite", bold);
 include_agb_font!(
     PLAIN_RECOLOURED,
     "../examples/plain_8x8_text15.aseprite",
@@ -78,46 +77,88 @@ static FONTS: &[(&[u8], SlotFont, bool, u8)] = &[
     (
         b"limited_blocky_3x5_text15",
         SlotFont::Printable(&LIMITED_BLOCKY),
-        false,1
+        false,
+        1,
     ),
-    (b"blocky_3x7_text15", SlotFont::Printable(&BLOCKY),false,1),
-    (b"vhs_10x16_text15", SlotFont::Printable(&VHS),true,1),
+    (b"blocky_3x7_text15", SlotFont::Printable(&BLOCKY), false, 1),
+    (b"vhs_10x16_text15", SlotFont::Printable(&VHS), true, 1),
     (
         b"segment_8x8_text15_shadow14",
         SlotFont::Printable(&SEGMENT),
-        false,1
+        false,
+        1,
     ),
     (
         b"balloon_14x14_text15_shadow14_outline13",
         SlotFont::Printable(&BALLOON),
-        true,1
+        true,
+        1,
     ),
-    (b"western_13x14_text15", SlotFont::Printable(&WESTERN), true,1),
-    (b"serif_7x10_text15_shadow14", SlotFont::Printable(&SERIF_7),false,1),
-    (b"serif_9x10_text15", SlotFont::Printable(&SERIF_9),false,1),
-    (b"serif_11x10_text15", SlotFont::Printable(&SERIF_11),false,1),
-    (b"gothic_16x14_text15", SlotFont::Printable(&GOTHIC),true,1),
-    (b"plain_8x8_text15", SlotFont::Printable(&PLAIN),false,1),
+    (
+        b"western_13x14_text15",
+        SlotFont::Printable(&WESTERN),
+        true,
+        1,
+    ),
+    (
+        b"serif_7x10_text15_shadow14",
+        SlotFont::Printable(&SERIF_7),
+        false,
+        1,
+    ),
+    (
+        b"serif_9x10_text15",
+        SlotFont::Printable(&SERIF_9),
+        false,
+        1,
+    ),
+    (
+        b"serif_11x10_text15",
+        SlotFont::Printable(&SERIF_11),
+        false,
+        1,
+    ),
+    (
+        b"gothic_16x14_text15",
+        SlotFont::Printable(&GOTHIC),
+        true,
+        1,
+    ),
+    (b"plain_8x8_text15", SlotFont::Printable(&PLAIN), false, 1),
     (
         b"simple_8x8_text15_shadow14",
         SlotFont::Printable(&SIMPLE_8),
-        false,1
+        false,
+        1,
     ),
-    (b"simple_12x14_text15", SlotFont::Printable(&SIMPLE_12),true,1),
+    (
+        b"simple_12x14_text15",
+        SlotFont::Printable(&SIMPLE_12),
+        true,
+        1,
+    ),
     (
         b"simple_16x16_text15_shadow14",
         SlotFont::Printable(&SIMPLE_16),
-        true,1
+        true,
+        1,
     ),
-    (b"retro_8x9_text15", SlotFont::Printable(&RETRO),false,1),
-    (b"script_12x15_text15", SlotFont::Printable(&SCRIPT), true,1),
-    (b"dot_16x16_text15", SlotFont::Printable(&DOT),true,4),
+    (b"retro_8x9_text15", SlotFont::Printable(&RETRO), false, 1),
+    (
+        b"script_12x15_text15",
+        SlotFont::Printable(&SCRIPT),
+        true,
+        1,
+    ),
+    (b"dot_16x16_text15", SlotFont::Printable(&DOT), true, 4),
     (
         b"fantasy_8x10_text15_shadow14",
         SlotFont::Printable(&FANTASY),
-     true,1
+        true,
+        1,
     ),
-    (b"full_font", SlotFont::Full(&FULL), false,1),
+    (b"chrome_effect", SlotFont::Printable(&CHROME), true, 1),
+    (b"full_font", SlotFont::Full(&FULL), false, 1),
 ];
 
 static TEXT: &[u8] = br##" !"#$%&'()*+,-./
@@ -133,7 +174,6 @@ Example Number: 45.6 (sym!)
 
 Hyphen-aware word-wrapping over-engineered anti-disestablishmentarianism
 "##;
-
 
 static TALL_TEXT: &[u8] = br##" !"#$%&'()*+,-./
 0123456789:;<=>?
@@ -199,6 +239,28 @@ fn log_metrics() {
         );
     }
 
+    // Bare `monospace` must give every glyph the widest scanned roman advance
+    for (name, mono, roman) in [
+        ("plain_8x8 monospace", &PLAIN_MONO, &PLAIN),
+        ("segment_8x8 monospace", &SEGMENT_MONO, &SEGMENT),
+        (
+            "limited_blocky_3x5 monospace",
+            &LIMITED_BLOCKY_MONO,
+            &LIMITED_BLOCKY,
+        ),
+    ] {
+        let widest = *roman.char_widths.iter().max().unwrap();
+        assert!(
+            mono.char_widths.iter().all(|&w| w == widest),
+            "{name}: expected every advance to be {widest}"
+        );
+        assert_eq!(
+            mono.right_overhang(),
+            roman.right_overhang(),
+            "{name}: monospace changed the overhang"
+        );
+    }
+
     // Styling must not touch metrics: advances stay roman, only the stored
     // overhang differs
     assert_eq!(
@@ -237,9 +299,9 @@ fn main(mut gba: agb::Gba) -> ! {
     gfx.set_background_palette_colour(15, 15, Rgb15::WHITE);
     gfx.set_background_palette_colour(15, 14, Rgb15::BLACK);
     gfx.set_background_palette_colour(15, 13, Rgb15(0x7ffa));
-    gfx.set_background_palette_colour(15, 11, Rgb15::from(Rgb::new(140,0,0)));
-    gfx.set_background_palette_colour(15, 7, Rgb15::from(Rgb::new(0,140,0)));
-    gfx.set_background_palette_colour(15, 9, Rgb15::from(Rgb::new(0,0,140)));
+    gfx.set_background_palette_colour(15, 11, Rgb15::from(Rgb::new(140, 0, 0)));
+    gfx.set_background_palette_colour(15, 7, Rgb15::from(Rgb::new(0, 140, 0)));
+    gfx.set_background_palette_colour(15, 9, Rgb15::from(Rgb::new(0, 0, 140)));
 
     let mut state = App::new();
 
@@ -313,7 +375,7 @@ impl App {
             self.text_renderer.letter_spacing = FONTS[self.font].3 as i8;
             self.text_renderer.reset(false);
             self.text_renderer.draw_text(
-                if FONTS[self.font].2 { TALL_TEXT }else {TEXT},
+                if FONTS[self.font].2 { TALL_TEXT } else { TEXT },
                 &FONTS[self.font].1,
                 &mut self.bg_text,
                 vec2(4, 10),
