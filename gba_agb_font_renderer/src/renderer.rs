@@ -392,6 +392,42 @@ impl TextRenderer {
     }
 }
 
+fn clear_rect_in_tiles(
+    tiles: &mut [(i32, i32, DynamicTile16)],
+    pos: Vector2D<i32>,
+    size: (i32, i32),
+) {
+    if size.0 <= 0 || size.1 <= 0 {
+        return;
+    }
+    let tile_x_start = pos.x >> 3;
+    let tile_x_end = (pos.x + size.0 - 1) >> 3;
+    let tile_y_start = pos.y >> 3;
+    let tile_y_end = (pos.y + size.1 - 1) >> 3;
+    let py_end = pos.y + size.1 - 1;
+    let px_end = pos.x + size.0 - 1;
+    for (tx, ty, tile) in tiles {
+        if *tx < tile_x_start || *tx > tile_x_end || *ty < tile_y_start || *ty > tile_y_end {
+            continue;
+        }
+        let tile_py0 = *ty << 3;
+        let row_start = (pos.y - tile_py0).max(0) as usize;
+        let row_end = (py_end - tile_py0).min(7) as usize;
+        let tile_px0 = *tx << 3;
+        let n_start = (pos.x - tile_px0).max(0) as u32;
+        let n_end = (px_end - tile_px0).min(7) as u32;
+        let n_count = n_end - n_start + 1;
+        let mask = if n_count >= 8 {
+            u32::MAX
+        } else {
+            ((1u32 << (n_count << 2)) - 1) << (n_start << 2)
+        };
+        for row in tile.data_mut().iter_mut().take(row_end + 1).skip(row_start) {
+            *row &= !mask;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -465,41 +501,5 @@ mod tests {
             !any_ink(&mut renderer),
             "roman-sized clear left styled overhang ink behind"
         );
-    }
-}
-
-fn clear_rect_in_tiles(
-    tiles: &mut [(i32, i32, DynamicTile16)],
-    pos: Vector2D<i32>,
-    size: (i32, i32),
-) {
-    if size.0 <= 0 || size.1 <= 0 {
-        return;
-    }
-    let tile_x_start = pos.x >> 3;
-    let tile_x_end = (pos.x + size.0 - 1) >> 3;
-    let tile_y_start = pos.y >> 3;
-    let tile_y_end = (pos.y + size.1 - 1) >> 3;
-    let py_end = pos.y + size.1 - 1;
-    let px_end = pos.x + size.0 - 1;
-    for (tx, ty, tile) in tiles {
-        if *tx < tile_x_start || *tx > tile_x_end || *ty < tile_y_start || *ty > tile_y_end {
-            continue;
-        }
-        let tile_py0 = *ty << 3;
-        let row_start = (pos.y - tile_py0).max(0) as usize;
-        let row_end = (py_end - tile_py0).min(7) as usize;
-        let tile_px0 = *tx << 3;
-        let n_start = (pos.x - tile_px0).max(0) as u32;
-        let n_end = (px_end - tile_px0).min(7) as u32;
-        let n_count = n_end - n_start + 1;
-        let mask = if n_count >= 8 {
-            u32::MAX
-        } else {
-            ((1u32 << (n_count << 2)) - 1) << (n_start << 2)
-        };
-        for row in tile.data_mut().iter_mut().take(row_end + 1).skip(row_start) {
-            *row &= !mask;
-        }
     }
 }
